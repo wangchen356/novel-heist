@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#171513" />
+    <meta
+      name="description"
+      content="《还我小说！》——一款发生在晚自习的 2D 校园潜行 + 回合制嘴炮卡牌游戏。帮 Kanno 从班主任十一的抽屉里偷回猴子写的《两仪道》。"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f4ead8'/%3E%3Cpath d='M14 18h36v28H14z' fill='%23c84938' stroke='%23211d1a' stroke-width='3'/%3E%3Cpath d='M22 26h20M22 33h14' stroke='%23f4ead8' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <title>还我小说！— 晚自习校园潜行</title>
+    <script type="module" crossorigin src="./assets/index-C5pM2fEi.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DUJJGgoi.css">
+  </head>
+  <body>
+    <div id="app">
+      <section id="landing" class="landing">
+        <div class="landing-bg" aria-hidden="true">
+          <div class="corridor-line line-a"></div>
+          <div class="corridor-line line-b"></div>
+          <div class="corridor-line line-c"></div>
+          <div class="corridor-line line-d"></div>
+          <div class="landing-glow"></div>
+        </div>
+
+        <header class="site-header">
+          <div class="site-mark">
+            <span class="site-dot"></span>
+            临江三中 · 校园网
+          </div>
+          <div class="site-header-right">
+            <span>晚自习特别行动</span>
+            <button id="btn-landing-sound" class="text-button" type="button">声音：开</button>
+          </div>
+        </header>
+
+        <main class="landing-main">
+          <div class="hero">
+            <p class="eyebrow"><span>19:47</span> 高二（3）班 · 教室后门</p>
+            <h1 class="game-title">
+              <span class="title-small">还我</span>
+              <span class="title-big">小说！</span>
+              <span class="title-stamp">晚自习版</span>
+            </h1>
+            <p class="tagline">
+              小说被班主任没收了。<br />
+              朋友没催。但 Kanno 受不了那种“我欠你一本”的感觉。
+            </p>
+            <div class="hero-actions">
+              <button id="btn-start" class="comic-button primary" type="button">
+                <span class="button-kicker">开始</span>
+                开始晚自习
+              </button>
+              <button id="btn-continue" class="comic-button" type="button" disabled>
+                继续上回
+              </button>
+            </div>
+            <p class="micro-copy">
+              2D 潜行 · 回合制嘴炮 · 4 个场景 · 两种结局<br />
+              电脑与手机均可游玩。被发现就必须把话说完。
+            </p>
+          </div>
+
+          <aside class="notice-paper" aria-label="没收通报">
+            <span class="tape tape-left"></span>
+            <span class="tape tape-right"></span>
+            <div class="notice-meta">临江三中 · 教务处 · 第 037 号</div>
+            <h2>关于晚自习期间<br />违规阅读课外读物的通报</h2>
+            <p>
+              高二（3）班 Kanno 同学，于今日晚自习期间阅读课外读物《两仪道》，严重影响自习秩序。为严肃纪律，该书暂由班主任代为保管。
+            </p>
+            <p class="notice-small">请该同学于明日早读前到办公室说明情况。</p>
+            <div class="notice-sign">班主任：十一</div>
+            <div class="notice-stamp">已没收</div>
+            <div class="notice-doodle" aria-hidden="true">书在抽屉里。</div>
+          </aside>
+        </main>
+
+        <section class="cast-strip" aria-label="登场角色">
+          <div class="cast-label">CAST / 今晚登场</div>
+          <div class="cast-list">
+            <div class="cast-card">
+              <img src="./art/portrait_kanno.svg" alt="Kanno" />
+              <div><b>Kanno</b><span>主角 · 嘴比脑子快</span></div>
+            </div>
+            <div class="cast-card">
+              <img src="./art/portrait_houzi.svg" alt="猴子" />
+              <div><b>猴子</b><span>《两仪道》作者 · 不熟</span></div>
+            </div>
+            <div class="cast-card">
+              <img src="./art/portrait_wangxin.svg" alt="王心" />
+              <div><b>王心</b><span>教室 · 纪律委员</span></div>
+            </div>
+            <div class="cast-card">
+              <img src="./art/portrait_daoxiaowang.svg" alt="岛小王" />
+              <div><b>岛小王</b><span>厕所门口 · 所长</span></div>
+            </div>
+            <div class="cast-card">
+              <img src="./art/portrait_youxiaotang.svg" alt="右小唐" />
+              <div><b>右小唐</b><span>图书角 · 管理员</span></div>
+            </div>
+            <div class="cast-card">
+              <img src="./art/portrait_shiyi.svg" alt="十一" />
+              <div><b>十一</b><span>办公室 · 班主任</span></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="landing-footer">
+          <span>一个关于晚自习、面子与《两仪道》的短篇游戏</span>
+          <span class="footer-actions">
+            <button id="btn-how" class="text-button" type="button">操作说明</button>
+            <button id="btn-archive" class="text-button" type="button">制作档案</button>
+            <button id="btn-reset" class="text-button danger" type="button">清除存档</button>
+          </span>
+        </footer>
+        <div id="landing-overlay" class="overlay-layer hidden"></div>
+      </section>
+
+      <section id="game-screen" class="game-screen hidden">
+        <header class="game-topbar">
+          <div class="topbar-location">
+            <span id="area-kicker">晚自习 · 19:47</span>
+            <strong id="area-name">教室</strong>
+          </div>
+          <div class="objective" id="objective">
+            <span class="objective-dot"></span>
+            <span id="objective-text">找到后门钥匙</span>
+          </div>
+          <div class="topbar-right">
+            <span class="face-pill" id="face-counter">面子 <b>0</b></span>
+            <button id="btn-pause" class="icon-button" type="button" aria-label="暂停">暂停</button>
+          </div>
+        </header>
+
+        <div id="game-wrap" class="game-wrap">
+          <div id="game-root" class="game-root"></div>
+
+          <div id="hud-alert" class="alert-hud hidden">
+            <span class="alert-eye">◉</span>
+            <div class="alert-track"><div id="alert-fill" class="alert-fill"></div></div>
+            <span id="alert-label" class="alert-label">被注意</span>
+          </div>
+
+          <div id="hud-stamina" class="stamina-hud">
+            <span>体力</span>
+            <div class="stamina-track"><div id="stamina-fill" class="stamina-fill"></div></div>
+          </div>
+
+          <div id="prompt" class="prompt hidden"></div>
+          <div id="toast" class="toast hidden"></div>
+          <div id="control-hint" class="control-hint hidden"></div>
+
+          <div id="touch-controls" class="touch-controls hidden">
+            <div id="joystick-zone" class="joystick-zone">
+              <div id="joystick-base" class="joystick-base">
+                <div id="joystick-knob" class="joystick-knob"></div>
+              </div>
+            </div>
+            <div id="touch-actions" class="touch-actions">
+              <button class="touch-btn" data-action="crouch" type="button" aria-label="蹲伏">
+                <span class="touch-glyph">蹲</span><small>潜行</small>
+              </button>
+              <button class="touch-btn" data-action="sprint" type="button" aria-label="冲刺">
+                <span class="touch-glyph">冲</span><small>按住</small>
+              </button>
+              <button class="touch-btn" data-action="throw" type="button" aria-label="扔橡皮">
+                <span class="touch-glyph">扔</span><small>诱饵</small>
+              </button>
+              <button class="touch-btn" data-action="dodge" type="button" aria-label="闪避">
+                <span class="touch-glyph">闪</span><small>突进</small>
+              </button>
+              <button class="touch-btn" data-action="interact" type="button" aria-label="互动">
+                <span class="touch-glyph">互</span><small>互动</small>
+              </button>
+            </div>
+            <button id="btn-edit-layout" class="edit-layout-button" type="button">调整按键</button>
+            <div id="layout-toolbar" class="layout-toolbar hidden">
+              <span>拖动按钮调整位置</span>
+              <button id="btn-layout-save" class="mini-button" type="button">保存</button>
+              <button id="btn-layout-reset" class="mini-button ghost" type="button">重置</button>
+            </div>
+          </div>
+
+          <div id="dialogue-layer" class="dialogue-layer hidden"></div>
+          <div id="debate-layer" class="debate-layer hidden"></div>
+          <div id="overlay-layer-game" class="overlay-layer hidden"></div>
+          <div id="rotate-hint" class="rotate-hint">
+            <div class="rotate-phone">▭</div>
+            <b>请把手机横过来</b>
+            <span>横屏才能看清整间教室。</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </body>
+</html>
