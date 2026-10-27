@@ -46,6 +46,8 @@ interface BossRuntime {
   lastSeen: { x: number; y: number };
   searchTimer: number;
   confrontTimer: number;
+  lastPos: { x: number; y: number };
+  stuckTimer: number;
   mark: Phaser.GameObjects.Text;
   nameplate: Phaser.GameObjects.Text;
 }
@@ -62,6 +64,7 @@ export class StealthScene extends Phaser.Scene {
   private hidden = false;
   private hiddenSpot: HideSpotRuntime | null = null;
   private hasObjective = false;
+  private objectiveSpot = { x: 0, y: 0 };
   private collectedFace = 0;
   private stamina = 100;
   private maxStamina = 100;
@@ -106,6 +109,11 @@ export class StealthScene extends Phaser.Scene {
     this.hidden = false;
     this.hiddenSpot = null;
     this.hasObjective = false;
+    const objectiveSpots = this.level.objectiveSpots ?? [];
+    this.objectiveSpot =
+      objectiveSpots.length > 0
+        ? objectiveSpots[Math.floor(Math.random() * objectiveSpots.length)]
+        : { x: this.level.objective.x, y: this.level.objective.y };
     this.collectedFace = 0;
     this.stamina = staminaMax(this.save.stats);
     this.maxStamina = this.stamina;
@@ -119,6 +127,7 @@ export class StealthScene extends Phaser.Scene {
     this.lastVisibleAt = 0;
     this.sceneEnded = false;
     this.blockers = [];
+    this.propSolids = [];
     this.hideSpots = [];
     this.facePickups = [];
     input.clearActions();
@@ -127,8 +136,11 @@ export class StealthScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.physics.world.setBounds(36, 36, 1208, 648);
-    this.cameras.main.setBackgroundColor('#0d0e10');
+    const room = this.level.room;
+    this.physics.world.setBounds(room.left, room.top, room.right - room.left, room.bottom - room.top);
+    this.cameras.main.setBackgroundColor('#0a0b0d');
+    this.cameras.main.setZoom(this.level.zoom);
+    this.cameras.main.centerOn(640, 360);
     this.drawRoom();
     this.buildProps();
     this.buildHideSpots();
@@ -209,8 +221,22 @@ export class StealthScene extends Phaser.Scene {
   }
 
   private drawRoom(): void {
-    this.add.tileSprite(640, 360, 1280, 720, 'prop_floor').setDepth(0);
-    this.add.rectangle(640, 360, 1280, 720, 0x0b1623, 0.12).setDepth(2);
+    const room = this.level.room;
+    const roomW = room.right - room.left;
+    const roomH = room.bottom - room.top;
+    const centerX = room.left + roomW / 2;
+    const centerY = room.top + roomH / 2;
+
+    // The room is a compact inset; outside it is dark school corridor.
+    this.add.rectangle(640, 360, 1280, 720, 0x090a0c, 1).setDepth(-2);
+    this.add.tileSprite(centerX, centerY, roomW, roomH, 'prop_floor').setDepth(0);
+    this.add.rectangle(centerX, centerY, roomW, roomH, 0x0b1623, 0.12).setDepth(2);
+
+    // A soft falloff at the room edge makes the smaller space feel tighter.
+    const edge = this.add.graphics().setDepth(3.1);
+    edge.lineStyle(30, 0x08090a, 0.42).strokeRect(room.left, room.top, roomW, roomH);
+    edge.lineStyle(2, 0xd8c9b1, 0.12).strokeRect(room.left + 16, room.top + 16, roomW - 32, roomH - 32);
+
     this.level.lightPools.forEach((pool) => {
       this.add
         .image(pool.x, pool.y, 'prop_lightpool')
@@ -228,32 +254,37 @@ export class StealthScene extends Phaser.Scene {
         .ellipse(zone.x - zone.w * 0.2, zone.y + zone.h * 0.12, zone.w * 0.2, zone.h * 0.18, 0xa4d0df, 0.12)
         .setDepth(3.3);
     });
+
     const wall = (x: number, y: number, w: number, h: number) => {
       this.add.tileSprite(x, y, w, h, 'prop_wall').setDepth(9);
     };
-    wall(640, 18, 1280, 36);
-    wall(640, 702, 1280, 36);
-    wall(18, 360, 36, 720);
-    wall(1262, 360, 36, 720);
+    wall(centerX, room.top - 12, roomW + 48, 28);
+    wall(centerX, room.bottom + 12, roomW + 48, 28);
+    wall(room.left - 12, centerY, 28, roomH + 48);
+    wall(room.right + 12, centerY, 28, roomH + 48);
+
+    // Rays that leave the room hit the walls.
     this.blockers.push(
-      new Phaser.Geom.Rectangle(0, 0, 1280, 36),
-      new Phaser.Geom.Rectangle(0, 684, 1280, 36),
-      new Phaser.Geom.Rectangle(0, 0, 36, 720),
-      new Phaser.Geom.Rectangle(1244, 0, 36, 720),
+      new Phaser.Geom.Rectangle(0, 0, 1280, room.top),
+      new Phaser.Geom.Rectangle(0, room.bottom, 1280, 720 - room.bottom),
+      new Phaser.Geom.Rectangle(0, room.top, room.left, roomH),
+      new Phaser.Geom.Rectangle(room.right, room.top, 1280 - room.right, roomH),
     );
   }
 
   private buildSolidsForWalls(): void {
     this.solids = this.physics.add.staticGroup();
+    const room = this.level.room;
     const addZone = (x: number, y: number, w: number, h: number) => {
       const zone = this.add.zone(x, y, w, h);
       this.physics.add.existing(zone, true);
       this.solids.add(zone);
     };
-    addZone(640, 18, 1280, 36);
-    addZone(640, 702, 1280, 36);
-    addZone(18, 360, 36, 720);
-    addZone(1262, 360, 36, 720);
+    const thickness = 36;
+    addZone(640, room.top - thickness / 2, 1280, thickness);
+    addZone(640, room.bottom + thickness / 2, 1280, thickness);
+    addZone(room.left - thickness / 2, 360, thickness, 720);
+    addZone(room.right + thickness / 2, 360, thickness, 720);
   }
 
   private buildProps(): void {
@@ -306,8 +337,9 @@ export class StealthScene extends Phaser.Scene {
 
   private buildObjectiveAndExit(): void {
     const obj = this.level.objective;
+    const spot = this.objectiveSpot;
     this.objectiveGlow = this.add
-      .image(obj.x, obj.y, 'prop_lightpool')
+      .image(spot.x, spot.y, 'prop_lightpool')
       .setScale(0.42)
       .setTint(0xf0c04e)
       .setAlpha(0.7)
@@ -322,12 +354,12 @@ export class StealthScene extends Phaser.Scene {
       repeat: -1,
     });
     this.objectiveSprite = this.add
-      .image(obj.x, obj.y, obj.texture)
+      .image(spot.x, spot.y, obj.texture)
       .setDisplaySize(42, 42)
       .setDepth(510);
     this.tweens.add({
       targets: this.objectiveSprite,
-      y: obj.y - 6,
+      y: spot.y - 6,
       duration: 900,
       yoyo: true,
       repeat: -1,
@@ -375,7 +407,7 @@ export class StealthScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     playerBody.setSize(26, 18);
-    playerBody.setOffset(23, 67);
+    playerBody.setOffset((this.player.width - 26) / 2, this.player.height - 29);
     this.player.setDrag(0, 0);
   }
 
@@ -387,9 +419,10 @@ export class StealthScene extends Phaser.Scene {
       .setScale(1.02)
       .setDepth(spawn.y + 30);
     this.boss.setImmovable(true);
+    this.boss.setCollideWorldBounds(true);
     const bossBody = this.boss.body as Phaser.Physics.Arcade.Body;
     bossBody.setSize(28, 18);
-    bossBody.setOffset(22, 67);
+    bossBody.setOffset((this.boss.width - 28) / 2, this.boss.height - 29);
     const mark = this.add
       .text(spawn.x, spawn.y - 64, '', {
         fontFamily: '"Microsoft YaHei", sans-serif',
@@ -420,12 +453,14 @@ export class StealthScene extends Phaser.Scene {
       facing: -Math.PI / 2,
       alert: 0,
       patrolIndex: 0,
-      target: spawn.patrol[0] ?? null,
-      wait: 450,
+      target: this.pickBossTarget(spawn.x, spawn.y),
+      wait: 250,
       waitBaseFacing: -Math.PI / 2,
       lastSeen: { x: spawn.x, y: spawn.y },
       searchTimer: 0,
       confrontTimer: 0,
+      lastPos: { x: spawn.x, y: spawn.y },
+      stuckTimer: 0,
       mark,
       nameplate,
     };
@@ -492,9 +527,10 @@ export class StealthScene extends Phaser.Scene {
   private throwChalk(wet: boolean): void {
     this.throwCooldown = 2.8;
     const dir = this.facing.lengthSq() > 0 ? this.facing.clone() : new Phaser.Math.Vector2(1, 0);
+    const room = this.level.room;
     const target = {
-      x: Phaser.Math.Clamp(this.player.x + dir.x * 190, 56, 1224),
-      y: Phaser.Math.Clamp(this.player.y + dir.y * 190, 56, 664),
+      x: Phaser.Math.Clamp(this.player.x + dir.x * 190, room.left + 20, room.right - 20),
+      y: Phaser.Math.Clamp(this.player.y + dir.y * 190, room.top + 20, room.bottom - 20),
     };
     const chalk = this.add.image(this.player.x, this.player.y - 8, 'prop_chalk').setDisplaySize(18, 11).setDepth(100);
     this.tweens.add({
@@ -524,8 +560,9 @@ export class StealthScene extends Phaser.Scene {
       boss.lastSeen = { x: this.player.x, y: this.player.y };
       boss.facing = Phaser.Math.Angle.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
       this.boss.setFlipX(Math.cos(boss.facing) < -0.01);
+      boss.stuckTimer = 0;
       if (dist > 58) {
-        this.moveBoss(this.player.x, this.player.y, this.level.boss.speed * 1.12);
+        this.moveBoss(this.player.x, this.player.y, this.level.boss.speed * 1.18);
       } else {
         this.boss.setVelocity(0);
         boss.confrontTimer += dt;
@@ -538,29 +575,44 @@ export class StealthScene extends Phaser.Scene {
       boss.alert = Math.max(0, boss.alert - 17 * dt);
       if (boss.state === 'chase') {
         boss.state = 'search';
-        boss.searchTimer = 2.3;
+        boss.searchTimer = 1.25 + Math.random() * 1.1;
       }
       if (boss.state === 'search') {
         boss.searchTimer -= dt;
-        boss.facing += Math.sin(time / 340) * 0.0028;
+        boss.facing += dt * 1.4;
         this.boss.setVelocity(0);
+        this.boss.setFlipX(Math.cos(boss.facing) < -0.01);
         if (boss.searchTimer <= 0) {
           boss.state = 'patrol';
-          boss.patrolIndex = 0;
-          boss.target = boss.spawn.patrol[0] ?? null;
-          boss.wait = 350;
+          boss.target = this.pickBossTarget(this.boss.x, this.boss.y);
+          boss.wait = 180 + Math.random() * 280;
         }
       } else if (boss.state === 'investigate' && boss.target) {
         const reach = this.moveBoss(boss.target.x, boss.target.y, this.level.boss.speed * 1.05);
         if (reach) {
           boss.state = 'search';
-          boss.searchTimer = 2.1;
+          boss.searchTimer = 1.2 + Math.random() * 1.1;
           boss.target = null;
         }
       } else {
         this.updatePatrol(boss, dt, time);
       }
+
+      // If a desk or wall pins the boss, don't let the patrol deadlock.
+      if ((boss.state === 'patrol' || boss.state === 'investigate') && boss.wait <= 0) {
+        const moved = Phaser.Math.Distance.Between(boss.lastPos.x, boss.lastPos.y, this.boss.x, this.boss.y);
+        if (moved < 1.4) boss.stuckTimer += dt;
+        else boss.stuckTimer = 0;
+        if (boss.stuckTimer > 0.75) {
+          boss.target = this.pickBossTarget(this.boss.x, this.boss.y);
+          boss.wait = 0;
+          boss.stuckTimer = 0;
+        }
+      } else {
+        boss.stuckTimer = 0;
+      }
     }
+    boss.lastPos = { x: this.boss.x, y: this.boss.y };
     this.boss.setDepth(this.boss.y + 30);
     boss.mark.setPosition(this.boss.x, this.boss.y - 62);
     boss.nameplate.setPosition(this.boss.x, this.boss.y + 52);
@@ -570,7 +622,7 @@ export class StealthScene extends Phaser.Scene {
 
   private updatePatrol(boss: BossRuntime, dt: number, time: number): void {
     if (!boss.target) {
-      boss.target = boss.spawn.patrol[0] ?? null;
+      boss.target = this.pickBossTarget(this.boss.x, this.boss.y);
       if (!boss.target) {
         this.boss.setVelocity(0);
         return;
@@ -578,19 +630,33 @@ export class StealthScene extends Phaser.Scene {
     }
     if (boss.wait > 0) {
       boss.wait -= dt * 1000;
-      boss.facing = boss.waitBaseFacing + Math.sin(time / 450) * 0.42;
+      boss.facing = boss.waitBaseFacing + Math.sin(time / 450) * 0.52;
       this.boss.setVelocity(0);
       this.boss.setFlipX(Math.cos(boss.facing) < -0.01);
       return;
     }
     const reached = this.moveBoss(boss.target.x, boss.target.y, this.level.boss.speed);
     if (reached) {
-      const point = boss.spawn.patrol[boss.patrolIndex];
-      boss.wait = point?.wait ?? 550;
-      boss.waitBaseFacing = boss.facing;
-      boss.patrolIndex = (boss.patrolIndex + 1) % boss.spawn.patrol.length;
-      boss.target = boss.spawn.patrol[boss.patrolIndex] ?? null;
+      boss.wait = 220 + Math.random() * 620;
+      boss.waitBaseFacing = boss.facing + (Math.random() - 0.5) * Math.PI * 1.6;
+      boss.target = this.pickBossTarget(this.boss.x, this.boss.y);
+      boss.patrolIndex = 0;
     }
+  }
+
+  private pickBossTarget(fromX: number, fromY: number): { x: number; y: number } | null {
+    const points = this.level.boss.patrol;
+    if (!points.length) return null;
+    const room = this.level.room;
+    const options = points.filter(
+      (point) => Phaser.Math.Distance.Between(fromX, fromY, point.x, point.y) > 76,
+    );
+    const pool = options.length > 0 ? options : points;
+    const point = pool[Math.floor(Math.random() * pool.length)];
+    return {
+      x: Phaser.Math.Clamp(point.x + (Math.random() - 0.5) * 56, room.left + 46, room.right - 46),
+      y: Phaser.Math.Clamp(point.y + (Math.random() - 0.5) * 42, room.top + 46, room.bottom - 46),
+    };
   }
 
   private moveBoss(x: number, y: number, speed: number): boolean {
@@ -759,7 +825,7 @@ export class StealthScene extends Phaser.Scene {
     }
     const interact = input.consume('interact');
     const nearHide = this.nearestHide();
-    const nearObjective = this.distanceTo(this.level.objective.x, this.level.objective.y) < 74 && !this.hasObjective;
+    const nearObjective = this.distanceTo(this.objectiveSpot.x, this.objectiveSpot.y) < 74 && !this.hasObjective;
     const nearExit = this.distanceTo(this.level.exit.x, this.level.exit.y) < 92;
 
     if (interact) {
@@ -1008,6 +1074,7 @@ export class StealthScene extends Phaser.Scene {
       bossState: this.bossRuntime?.state,
       boss: this.boss ? { x: Math.round(this.boss.x), y: Math.round(this.boss.y), facing: this.bossRuntime?.facing } : null,
       player: this.player ? { x: Math.round(this.player.x), y: Math.round(this.player.y) } : null,
+      objective: this.objectiveSpot ? { x: Math.round(this.objectiveSpot.x), y: Math.round(this.objectiveSpot.y) } : null,
       level: this.level?.id,
     };
   }

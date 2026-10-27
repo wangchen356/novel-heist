@@ -1,5 +1,18 @@
 export type CardType = 'logic' | 'emotion' | 'fact';
 export type CardRole = 'damage' | 'reveal' | 'delay';
+export type DebateTopic =
+  | '规矩'
+  | '逻辑'
+  | '时间'
+  | '关系'
+  | '情绪'
+  | '同情'
+  | '证据'
+  | '细节'
+  | '责任'
+  | '双标'
+  | '面子'
+  | '人证';
 export type StatKey = 'stamina' | 'speed' | 'stealth' | 'oratory';
 export type BossId = 'wangxin' | 'daoxiaowang' | 'youxiaotang' | 'shiyi';
 export type EndingId = 'silent' | 'face-to-face';
@@ -12,6 +25,7 @@ export interface CardDef {
   line: string;
   desc: string;
   base: number;
+  topic: DebateTopic;
 }
 
 export interface Stats {
@@ -25,6 +39,7 @@ export interface BossLine {
   id: string;
   text: string;
   type: CardType;
+  topic?: DebateTopic;
   phase: 1 | 2 | 3;
 }
 
@@ -110,6 +125,13 @@ export interface ExitDef {
   texture: string;
 }
 
+export interface RoomBounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 export interface LevelConfig {
   id: string;
   index: number;
@@ -119,6 +141,7 @@ export interface LevelConfig {
   bossId: BossId;
   playerStart: { x: number; y: number };
   objective: ObjectiveDef;
+  objectiveSpots?: Array<{ x: number; y: number }>;
   exit: ExitDef;
   boss: BossSpawn;
   props: PropDef[];
@@ -126,6 +149,8 @@ export interface LevelConfig {
   facePickups: FacePickupDef[];
   lightPools: Array<{ x: number; y: number; scale?: number }>;
   wetZones?: Array<{ x: number; y: number; w: number; h: number }>;
+  room: RoomBounds;
+  zoom: number;
   intro: SceneLine[];
   complete: SceneLine[];
   objectiveAfter: string;

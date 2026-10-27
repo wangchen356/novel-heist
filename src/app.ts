@@ -873,7 +873,7 @@ export class GameApp {
       const cards = CARDS.map((card) => {
         const selectedClass = selected.has(card.id) ? 'selected' : '';
         return `<button class="deck-card ${selectedClass}" data-card-id="${card.id}" type="button">
-          <span class="mini-type">${CARD_TYPES[card.type].label} · ${card.role === 'damage' ? '输出' : card.role === 'reveal' ? '情报' : '拖延'}</span>
+          <span class="mini-type">${CARD_TYPES[card.type].label} · ${card.role === 'damage' ? '输出' : card.role === 'reveal' ? '情报' : '拖延'} · 话题「${card.topic}」</span>
           <h4>${escapeHtml(card.name)}</h4>
           <p>${escapeHtml(card.desc)}</p>
           <span class="deck-dmg">${card.base} 伤害</span>
@@ -888,7 +888,7 @@ export class GameApp {
         `<div class="modal-card">
           <div class="modal-kicker">DECK / 牌组</div>
           <h2>把嘴里的牌，重新排一遍。</h2>
-          <p class="modal-sub">只能在击败 Boss 后调整。选 6 张；三种类型至少各一张。口才提升的是所有牌的基础伤害。</p>
+          <p class="modal-sub">只能在击败 Boss 后调整。从 12 张牌里选 6 张；三种类型至少各一张。卡牌话题与 Boss 当前话题一致时，伤害 +6。</p>
           <div class="deck-layout">
             <div class="deck-grid">${cards}</div>
             <aside class="deck-side">
@@ -939,7 +939,7 @@ export class GameApp {
       if (!known.length) return;
       rows.push(`<div class="notebook-boss"><b>${boss.name}</b><span>${boss.title}</span></div>`);
       known.forEach((line) => {
-        rows.push(`<div class="notebook-line"><span>${escapeHtml(line.text)}</span><b>${CARD_TYPES[line.type].short}</b></div>`);
+        rows.push(`<div class="notebook-line"><span>${escapeHtml(line.text)}<small class="notebook-topic">话题 · ${line.topic ?? '规矩'}</small></span><b>${CARD_TYPES[line.type].short}</b></div>`);
       });
     });
     const html = `<div class="modal-card">

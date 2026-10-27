@@ -1,9 +1,9 @@
 import { audio } from '../audio';
 import { bus } from '../events';
-import { CARD_TYPES, cardDamage, counterMultiplier, getCard, relationLabel } from '../data/cards';
+import { CARD_TYPES, TOPIC_BONUS, cardDamage, counterMultiplier, getCard, relationLabel, topicMatch } from '../data/cards';
 import { getBoss } from '../data/bosses';
 import { saveGame } from '../state';
-import type { BossDef, BossLine, CardDef, CardType, SaveData } from '../types';
+import type { BossDef, BossLine, CardDef, CardType, DebateTopic, SaveData } from '../types';
 
 interface DebateCallbacks {
   onWin: () => void;
@@ -215,13 +215,17 @@ export class DebateController {
     this.renderLog();
   }
 
+  private lineTopic(): DebateTopic {
+    return this.line?.topic ?? '规矩';
+  }
+
   private speechHtml(): string {
     if (!this.line) return '';
     const known = this.save.notebook[this.line.id] || (this.revealNext && this.active ? this.line.type : undefined);
     const typeLabel = known
       ? `<span class="line-type">${CARD_TYPES[known].short}</span>`
       : `<span class="line-type unknown-type">？？</span>`;
-    return `${this.escape(this.line.text)}${typeLabel}`;
+    return `${this.escape(this.line.text)}<span class="speech-tags"><span class="line-topic">话题 · ${this.lineTopic()}</span>${typeLabel}</span>`;
   }
 
   private logHtml(): string {
@@ -239,16 +243,18 @@ export class DebateController {
         const meta = CARD_TYPES[card.type];
         const effect =
           card.role === 'reveal' ? '看穿下一句' : card.role === 'delay' ? '多拖一步' : '正面输出';
+        const match = this.line ? topicMatch(card, this.lineTopic()) : false;
         return `
-          <button class="play-card type-${card.type}" data-card-id="${card.id}" type="button">
+          <button class="play-card type-${card.type} ${match ? 'topic-match' : ''}" data-card-id="${card.id}" type="button">
             <span class="play-card-top">
               <span class="play-card-type">${meta.label}</span>
+              <span class="card-topic">${card.topic}</span>
               <span class="play-card-number">${String(index + 1).padStart(2, '0')}</span>
             </span>
             <h4>${this.escape(card.name)}</h4>
             <p>“${this.escape(card.line)}”</p>
             <span class="play-card-foot">
-              <span class="card-effect">${effect}</span>
+              <span class="card-effect">${match ? `<b class="match-flag">切题 +${TOPIC_BONUS}</b> · ` : ''}${effect}</span>
               <span class="card-damage">${cardDamage(card, this.save.stats.oratory)} <small>伤害</small></span>
             </span>
             <span class="card-key">${index + 1}</span>
@@ -321,17 +327,19 @@ export class DebateController {
     const relation = relationLabel(card.type, this.line.type);
     const multiplier = counterMultiplier(card.type, this.line.type);
     const bonus = this.comboPending;
-    const raw = cardDamage(card, this.save.stats.oratory, bonus);
+    const lineTopic = this.lineTopic();
+    const matchedTopic = topicMatch(card, lineTopic);
+    const raw = cardDamage(card, this.save.stats.oratory, bonus) + (matchedTopic ? TOPIC_BONUS : 0);
     const damage = Math.max(1, Math.round(raw * multiplier));
     this.conviction = Math.max(0, this.conviction - damage);
     const meta = CARD_TYPES[card.type];
     const bossType = CARD_TYPES[this.line.type];
     this.log.push({
-      text: `${this.boss.name}说的是【${bossType.label}】“${this.line.text}”`,
+      text: `${this.boss.name}说的是【${bossType.label}】“${this.line.text}” · 话题「${lineTopic}」`,
     });
     this.log.push({
-      text: `你打出【${card.name}】${relation === '克制' ? '克制' : relation === '被克' ? '被克' : '普通'}：${damage} 伤害。`,
-      kind: relation === '克制' ? 'good' : relation === '被克' ? 'bad' : undefined,
+      text: `你打出【${card.name}】${matchedTopic ? `切题「${lineTopic}」+${TOPIC_BONUS}` : `话题「${card.topic}」没接上`}，${relation === '克制' ? '克制' : relation === '被克' ? '被克' : '普通'}：${damage} 伤害。`,
+      kind: relation === '克制' || matchedTopic ? 'good' : relation === '被克' ? 'bad' : undefined,
     });
     if (this.comboPending > 0) this.comboPending = 0;
     if (relation === '克制') {
@@ -351,10 +359,14 @@ export class DebateController {
     if (card.role === 'reveal') {
       this.revealNext = true;
       this.log.push({ text: `你摸清了下一句的题型：${bossType.label}。` });
+      if (matchedTopic) this.log.push({ text: `而且你接住了「${lineTopic}」。`, kind: 'good' });
     }
     if (card.role === 'delay') {
       this.stepsLeft += 1;
       this.log.push({ text: '你多拖了一步。教导主任走得更慢了。' });
+    }
+    if (matchedTopic && card.role !== 'reveal') {
+      this.log.push({ text: `你把话头拉回「${lineTopic}」，对方的节奏被打断了。`, kind: 'good' });
     }
     this.save.notebook[this.line.id] = this.line.type;
     this.save.cycleKnown = true;
@@ -470,7 +482,7 @@ export class DebateController {
             ? knownLines
                 .map(
                   (line) =>
-                    `<div class="notebook-line"><span>${this.escape(line.text)}</span><b>${CARD_TYPES[line.type].short}</b></div>`,
+                    `<div class="notebook-line"><span>${this.escape(line.text)}<small class="notebook-topic">话题 · ${line.topic ?? '规矩'}</small></span><b>${CARD_TYPES[line.type].short}</b></div>`,
                 )
                 .join('')
             : '<div class="notebook-empty">还没有记下任何一句。第一次打，先大胆试。</div>'
@@ -499,11 +511,11 @@ export class DebateController {
         <h3>${win ? `${this.boss.name}让步了` : '教导主任到门口了'}</h3>
         <p>${
           win
-            ? `第 ${this.turn} 回合，你把“${this.escape(this.boss.name)}”的坚定值打空了。她沉默了一会儿，往旁边挪了半步。`
+            ? `第 ${this.turn} 回合，你把“${this.escape(this.boss.name)}”的坚定值打空了。对方沉默了一会儿，往旁边挪了半步。`
             : '你还没把话说完，走廊里的皮鞋声已经停在了门口。'
         }</p>
         <div class="result-actions">
-          <button class="comic-button primary" id="btn-result-next" type="button">${win ? '听她说完' : '回到座位'}</button>
+          <button class="comic-button primary" id="btn-result-next" type="button">${win ? '听对方说完' : '回到座位'}</button>
         </div>
       </div>
     `;

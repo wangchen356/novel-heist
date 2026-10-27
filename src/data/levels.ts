@@ -4,7 +4,9 @@ const k = (text: string): SceneLine => ({ speaker: 'Kanno', text, portrait: './a
 const n = (text: string): SceneLine => ({ speaker: '旁白', text });
 const novel = (text: string): SceneLine => ({ speaker: '《两仪道》', text, style: 'novel' });
 
-export const LEVELS: LevelConfig[] = [
+type RawLevel = Omit<LevelConfig, 'room' | 'zoom'>;
+
+const RAW_LEVELS: RawLevel[] = [
   {
     id: 'classroom',
     index: 0,
@@ -12,7 +14,7 @@ export const LEVELS: LevelConfig[] = [
     kicker: '晚自习 · 19:47',
     time: '19:47',
     bossId: 'wangxin',
-    playerStart: { x: 1080, y: 620 },
+    playerStart: { x: 1060, y: 600 },
     objective: {
       x: 612,
       y: 150,
@@ -22,6 +24,11 @@ export const LEVELS: LevelConfig[] = [
       prompt: 'E 拿走讲台上的后门钥匙',
       texture: 'prop_objective_key',
     },
+    objectiveSpots: [
+      { x: 170, y: 220 },
+      { x: 1000, y: 370 },
+      { x: 760, y: 220 },
+    ],
     exit: {
       x: 84,
       y: 610,
@@ -34,15 +41,18 @@ export const LEVELS: LevelConfig[] = [
       x: 640,
       y: 250,
       patrol: [
-        { x: 270, y: 250, wait: 900 },
-        { x: 1010, y: 250, wait: 700 },
-        { x: 1010, y: 300, wait: 600 },
-        { x: 270, y: 300, wait: 600 },
+        { x: 270, y: 250, wait: 520 },
+        { x: 1010, y: 250, wait: 500 },
+        { x: 1010, y: 470, wait: 650 },
+        { x: 640, y: 470, wait: 420 },
+        { x: 270, y: 470, wait: 620 },
+        { x: 760, y: 300, wait: 420 },
+        { x: 940, y: 600, wait: 500 },
       ],
-      visionRange: 228,
-      visionAngle: 66,
-      hearingRange: 150,
-      speed: 62,
+      visionRange: 238,
+      visionAngle: 68,
+      hearingRange: 168,
+      speed: 68,
     },
     props: [
       { key: 'prop_blackboard', x: 640, y: 66, w: 360, h: 92 },
@@ -65,6 +75,9 @@ export const LEVELS: LevelConfig[] = [
       { key: 'prop_chair', x: 460, y: 430, w: 48, h: 52 },
       { key: 'prop_chair', x: 690, y: 430, w: 48, h: 52 },
       { key: 'prop_chair', x: 920, y: 430, w: 48, h: 52 },
+      { key: 'prop_cart', x: 970, y: 450, w: 132, h: 92, solid: true, blocksVision: true },
+      { key: 'prop_cabinet', x: 760, y: 220, w: 100, h: 148, solid: true, blocksVision: true },
+      { key: 'prop_bookshelf', x: 980, y: 560, w: 112, h: 150, solid: true, blocksVision: true },
       { key: 'prop_plant', x: 1140, y: 600, w: 68, h: 100 },
     ],
     hideSpots: [
@@ -94,7 +107,7 @@ export const LEVELS: LevelConfig[] = [
       k('他说不急。但我不能当没这回事。'),
       novel('《两仪道》有云：真正的侠客，不在正门硬闯，而在无人处出剑。'),
       k('……所以我决定从后门出去。'),
-      n('王心坐在讲台边，点名册摊开。后门钥匙就在讲台上。'),
+      n('王心坐在讲台边，点名册摊开。班主任十一让他今晚看守晚自习。后门钥匙在教室的某个角落。'),
     ],
     complete: [
       n('钥匙到手。后门就在身后，走廊里传来教导主任的皮鞋声。'),
@@ -119,6 +132,11 @@ export const LEVELS: LevelConfig[] = [
       prompt: 'E 拿走拖把车上的楼上钥匙',
       texture: 'prop_objective_key',
     },
+    objectiveSpots: [
+      { x: 300, y: 520 },
+      { x: 600, y: 240 },
+      { x: 900, y: 520 },
+    ],
     exit: {
       x: 1180,
       y: 380,
@@ -129,17 +147,20 @@ export const LEVELS: LevelConfig[] = [
     },
     boss: {
       x: 600,
-      y: 350,
+      y: 300,
       patrol: [
-        { x: 240, y: 350, wait: 700 },
-        { x: 1040, y: 350, wait: 600 },
-        { x: 1040, y: 460, wait: 700 },
+        { x: 240, y: 350, wait: 520 },
+        { x: 1040, y: 350, wait: 500 },
+        { x: 1040, y: 460, wait: 650 },
         { x: 240, y: 460, wait: 600 },
+        { x: 600, y: 300, wait: 400 },
+        { x: 600, y: 560, wait: 450 },
+        { x: 800, y: 420, wait: 450 },
       ],
-      visionRange: 220,
-      visionAngle: 68,
-      hearingRange: 190,
-      speed: 68,
+      visionRange: 232,
+      visionAngle: 70,
+      hearingRange: 205,
+      speed: 72,
     },
     props: [
       { key: 'prop_stall', x: 200, y: 132, w: 136, h: 166, solid: true, blocksVision: true },
@@ -158,6 +179,9 @@ export const LEVELS: LevelConfig[] = [
       { key: 'prop_cooler', x: 80, y: 300, w: 64, h: 100 },
       { key: 'prop_window', x: 120, y: 66, w: 132, h: 92 },
       { key: 'prop_window', x: 1160, y: 66, w: 100, h: 80 },
+      { key: 'prop_cart', x: 700, y: 420, w: 132, h: 92, solid: true, blocksVision: true },
+      { key: 'prop_mop_bucket', x: 880, y: 300, w: 70, h: 64 },
+      { key: 'prop_wet_sign', x: 420, y: 440, w: 62, h: 84 },
     ],
     hideSpots: [
       { id: 'stall-1', x: 200, y: 240, w: 110, h: 46, label: '隔间', prompt: 'E 躲进隔间' },
@@ -184,7 +208,7 @@ export const LEVELS: LevelConfig[] = [
       n('20:03。厕所门口的灯坏了一盏，另一盏在闪。'),
       novel('沈夜踏入戒律堂时，四周的水声忽然停了。'),
       k('……这里的水声不会停。因为水管漏了。'),
-      n('岛小王靠在门边，拖把横在腿前。楼梯间就在他身后。'),
+      n('岛小王靠在门边，拖把横在腿前。楼梯间就在他身后。钥匙不在他手里。'),
     ],
     complete: [
       n('钥匙到手。楼梯间的门开了，楼上图书角的灯还亮着。'),
@@ -209,6 +233,11 @@ export const LEVELS: LevelConfig[] = [
       prompt: 'E 从书车上拿走办公室门禁卡',
       texture: 'prop_objective_key',
     },
+    objectiveSpots: [
+      { x: 420, y: 400 },
+      { x: 660, y: 330 },
+      { x: 940, y: 620 },
+    ],
     exit: {
       x: 1180,
       y: 620,
@@ -219,17 +248,20 @@ export const LEVELS: LevelConfig[] = [
     },
     boss: {
       x: 620,
-      y: 350,
+      y: 300,
       patrol: [
-        { x: 250, y: 330, wait: 900 },
-        { x: 1030, y: 330, wait: 700 },
-        { x: 1030, y: 370, wait: 900 },
-        { x: 250, y: 370, wait: 700 },
+        { x: 250, y: 330, wait: 550 },
+        { x: 1030, y: 330, wait: 500 },
+        { x: 1030, y: 420, wait: 650 },
+        { x: 250, y: 420, wait: 650 },
+        { x: 640, y: 330, wait: 450 },
+        { x: 640, y: 420, wait: 450 },
+        { x: 940, y: 600, wait: 500 },
       ],
-      visionRange: 252,
-      visionAngle: 56,
-      hearingRange: 135,
-      speed: 52,
+      visionRange: 260,
+      visionAngle: 58,
+      hearingRange: 150,
+      speed: 60,
     },
     props: [
       { key: 'prop_bookshelf', x: 240, y: 160, w: 132, h: 184, solid: true, blocksVision: true },
@@ -244,6 +276,8 @@ export const LEVELS: LevelConfig[] = [
       { key: 'prop_plant', x: 1160, y: 460, w: 68, h: 100 },
       { key: 'prop_plant', x: 660, y: 650, w: 68, h: 100 },
       { key: 'prop_window', x: 100, y: 66, w: 132, h: 92 },
+      { key: 'prop_cart', x: 420, y: 400, w: 132, h: 92, solid: true, blocksVision: true },
+      { key: 'prop_cart', x: 900, y: 400, w: 132, h: 92, solid: true, blocksVision: true },
     ],
     hideSpots: [
       { id: 'shelf-1', x: 240, y: 300, w: 120, h: 44, label: '书架后面', prompt: 'E 躲到书架后面' },
@@ -268,7 +302,7 @@ export const LEVELS: LevelConfig[] = [
       n('20:21。图书角的灯只开了一半，书架像一排排安静的墙。'),
       novel('书页之间藏着一个人的影子。你翻得越快，影子越深。'),
       k('这段话是猴子写的。他写的时候一定没在晚自习。'),
-      n('右小唐坐在书车后面，正在给一本书贴新的书签。'),
+      n('右小唐坐在书车后面，正在给一本书贴新的书签。十一今天让她临时看守图书角。'),
     ],
     complete: [
       n('门禁卡到手。消防门发出一声很轻的咔哒。'),
@@ -283,7 +317,7 @@ export const LEVELS: LevelConfig[] = [
     kicker: '晚自习 · 20:39',
     time: '20:39',
     bossId: 'shiyi',
-    playerStart: { x: 620, y: 640 },
+    playerStart: { x: 760, y: 600 },
     objective: {
       x: 520,
       y: 150,
@@ -293,6 +327,11 @@ export const LEVELS: LevelConfig[] = [
       prompt: 'E 拿走抽屉里的《两仪道》',
       texture: 'prop_objective_book',
     },
+    objectiveSpots: [
+      { x: 150, y: 220 },
+      { x: 880, y: 520 },
+      { x: 300, y: 590 },
+    ],
     exit: {
       x: 640,
       y: 650,
@@ -305,15 +344,18 @@ export const LEVELS: LevelConfig[] = [
       x: 520,
       y: 250,
       patrol: [
-        { x: 300, y: 300, wait: 1000 },
-        { x: 980, y: 300, wait: 800 },
-        { x: 980, y: 410, wait: 1000 },
-        { x: 300, y: 410, wait: 800 },
+        { x: 300, y: 300, wait: 650 },
+        { x: 980, y: 300, wait: 600 },
+        { x: 980, y: 410, wait: 700 },
+        { x: 300, y: 410, wait: 700 },
+        { x: 520, y: 410, wait: 450 },
+        { x: 760, y: 520, wait: 450 },
+        { x: 900, y: 360, wait: 500 },
       ],
-      visionRange: 242,
-      visionAngle: 62,
-      hearingRange: 160,
-      speed: 58,
+      visionRange: 252,
+      visionAngle: 64,
+      hearingRange: 180,
+      speed: 64,
     },
     props: [
       { key: 'prop_office_desk', x: 520, y: 130, w: 188, h: 104, solid: true, blocksVision: true },
@@ -325,7 +367,9 @@ export const LEVELS: LevelConfig[] = [
       { key: 'prop_cooler', x: 80, y: 500, w: 64, h: 100 },
       { key: 'prop_clock', x: 790, y: 82, w: 82, h: 82 },
       { key: 'prop_chair', x: 700, y: 200, w: 48, h: 52 },
-      { key: 'prop_cart', x: 880, y: 520, w: 132, h: 92, solid: true },
+      { key: 'prop_cart', x: 880, y: 520, w: 132, h: 92, solid: true, blocksVision: true },
+      { key: 'prop_bookshelf', x: 380, y: 210, w: 112, h: 168, solid: true, blocksVision: true },
+      { key: 'prop_cabinet', x: 760, y: 400, w: 100, h: 148, solid: true, blocksVision: true },
     ],
     hideSpots: [
       { id: 'sofa', x: 280, y: 630, w: 172, h: 48, label: '沙发后面', prompt: 'E 躲到沙发后面' },
@@ -347,7 +391,7 @@ export const LEVELS: LevelConfig[] = [
       n('20:39。整层楼只剩下办公室的灯还亮着。'),
       novel('最后一扇门后，坐着那个不肯把剑谱还给你的人。'),
       k('……猴子，你写的这是什么破比喻。'),
-      n('十一背对着门，正在往保温杯里倒水。抽屉没有锁。'),
+      n('十一背对着门，正在往保温杯里倒水。抽屉没有锁，书却不一定在抽屉里。'),
     ],
     complete: [
       n('Kanno 把《两仪道》塞进校服里。十一没有回头。'),
@@ -358,6 +402,74 @@ export const LEVELS: LevelConfig[] = [
     finalStealthOnly: true,
   },
 ];
+
+const ROOM = { left: 96, top: 92, right: 1184, bottom: 628 };
+const SCALE_X = 0.84;
+const SCALE_Y = 0.82;
+const SCALE_SIZE = 0.88;
+
+const sx = (x: number): number => Math.round(640 + (x - 640) * SCALE_X);
+const sy = (y: number): number => Math.round(360 + (y - 360) * SCALE_Y);
+const sw = (value: number): number => Math.round(value * SCALE_SIZE);
+
+function compactLevel(raw: RawLevel): LevelConfig {
+  return {
+    ...raw,
+    playerStart: { x: sx(raw.playerStart.x), y: sy(raw.playerStart.y) },
+    objective: {
+      ...raw.objective,
+      x: sx(raw.objective.x),
+      y: sy(raw.objective.y),
+      w: sw(raw.objective.w),
+      h: sw(raw.objective.h),
+    },
+    objectiveSpots: raw.objectiveSpots?.map((spot) => ({ x: sx(spot.x), y: sy(spot.y) })),
+    exit: {
+      ...raw.exit,
+      x: sx(raw.exit.x),
+      y: sy(raw.exit.y),
+      w: sw(raw.exit.w),
+      h: sw(raw.exit.h),
+    },
+    boss: {
+      ...raw.boss,
+      x: sx(raw.boss.x),
+      y: sy(raw.boss.y),
+      patrol: raw.boss.patrol.map((point) => ({
+        ...point,
+        x: sx(point.x),
+        y: sy(point.y),
+      })),
+    },
+    props: raw.props.map((prop) => ({
+      ...prop,
+      x: sx(prop.x),
+      y: sy(prop.y),
+      w: prop.w ? sw(prop.w) : prop.w,
+      h: prop.h ? sw(prop.h) : prop.h,
+    })),
+    hideSpots: raw.hideSpots.map((spot) => ({
+      ...spot,
+      x: sx(spot.x),
+      y: sy(spot.y),
+      w: sw(spot.w),
+      h: sw(spot.h),
+    })),
+    facePickups: raw.facePickups.map((pickup) => ({ ...pickup, x: sx(pickup.x), y: sy(pickup.y) })),
+    lightPools: raw.lightPools.map((pool) => ({ ...pool, x: sx(pool.x), y: sy(pool.y) })),
+    wetZones: raw.wetZones?.map((zone) => ({
+      ...zone,
+      x: sx(zone.x),
+      y: sy(zone.y),
+      w: sw(zone.w),
+      h: sw(zone.h),
+    })),
+    room: ROOM,
+    zoom: 1.1,
+  };
+}
+
+export const LEVELS: LevelConfig[] = RAW_LEVELS.map(compactLevel);
 
 export function getLevel(index: number): LevelConfig {
   const level = LEVELS[index];

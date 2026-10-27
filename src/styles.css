@@ -1180,7 +1180,7 @@ button:focus-visible {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100%;
-  padding: clamp(10px, 1.8vw, 20px) clamp(12px, 2.4vw, 30px) clamp(10px, 1.4vw, 16px);
+  padding: clamp(10px, 1.8vw, 20px) clamp(12px, 2.4vw, 30px) clamp(14px, 2vh, 24px);
   gap: 10px;
 }
 
@@ -1422,6 +1422,33 @@ button:focus-visible {
   color: #9f8e74;
 }
 
+.speech-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.speech .line-topic {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid rgba(200, 73, 56, 0.45);
+  background: #f4df9a;
+  color: #6d4c22;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.speech .line-topic::before {
+  content: '◉';
+  margin-right: 4px;
+  color: var(--red);
+  font-size: 7px;
+}
+
 .debate-log {
   flex: 1;
   min-height: 54px;
@@ -1512,7 +1539,7 @@ button:focus-visible {
 
 .play-card {
   position: relative;
-  min-height: clamp(112px, 15vh, 166px);
+  min-height: clamp(104px, 13.5vh, 148px);
   padding: 12px 13px 10px;
   border: 3px solid var(--ink);
   background: var(--paper-bright);
@@ -1573,6 +1600,26 @@ button:focus-visible {
   border: 1px solid rgba(33, 29, 26, 0.4);
   color: #5c5142;
   font-size: 9px;
+}
+
+.card-topic {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 2px 5px;
+  border: 1px dashed rgba(33, 29, 26, 0.28);
+  color: #7b6348;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.play-card.topic-match {
+  border-color: var(--red);
+  box-shadow: 4px 4px 0 rgba(200, 73, 56, 0.35);
+}
+
+.match-flag {
+  color: var(--red);
+  font-weight: 400;
 }
 
 .play-card-number {
@@ -2844,6 +2891,14 @@ kbd {
   font-weight: 400;
 }
 
+.notebook-topic {
+  display: block;
+  margin-top: 3px;
+  color: #9a7a48;
+  font-family: var(--font-ui);
+  font-size: 8px;
+}
+
 .notebook-boss {
   display: flex;
   align-items: baseline;
@@ -3336,13 +3391,17 @@ kbd {
   }
 
   .deck-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
   }
 
   .deck-card {
-    min-height: 68px;
+    min-height: 62px;
     padding: 5px 6px;
+  }
+
+  .deck-card p {
+    display: none;
   }
 
   .deck-card h4 {

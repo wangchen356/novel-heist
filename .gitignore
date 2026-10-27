@@ -19,3 +19,12 @@ _*.mjs
 .gh/
 .env
 .env.*
+*_preview*.png
+.edge-temp*/
+__pycache__/
+*.pyc
+public/art/cast_v2/
+public/art/face_options/
+public/art/kanno_v4/
+public/art/youxiaotang_v5/
+public/art/youxiaotang_v6/

@@ -1,4 +1,4 @@
-import type { BossDef, SceneLine } from '../types';
+import type { BossDef, DebateTopic, SceneLine } from '../types';
 
 const narrator = (text: string): SceneLine => ({ speaker: '旁白', text });
 const kanno = (text: string): SceneLine => ({ speaker: 'Kanno', text, portrait: './art/portrait_kanno.svg' });
@@ -7,7 +7,7 @@ export const BOSSES: Record<string, BossDef> = {
   wangxin: {
     id: 'wangxin',
     name: '王心',
-    title: '纪律委员',
+    title: '学霸 · 纪律委员',
     shortTitle: '点名册',
     portrait: './art/portrait_wangxin.svg',
     sprite: 'wangxin',
@@ -16,7 +16,8 @@ export const BOSSES: Record<string, BossDef> = {
     steps: 10,
     intro: [
       narrator('王心从点名册后面抬起头。粉笔灰在灯下慢慢飘。'),
-      { speaker: '王心', text: '晚自习离开座位，去办公室。现在。', portrait: './art/portrait_wangxin.svg' },
+      { speaker: '王心', text: '十一让我今晚看着晚自习。你回座位，我可以不记。', portrait: './art/portrait_wangxin.svg' },
+      { speaker: '王心', text: '现在去办公室。别让我站起来。', portrait: './art/portrait_wangxin.svg' },
       kanno('等等，我可以说两句。'),
       { speaker: '王心', text: '说。但每说错一句，我就多记一条。', portrait: './art/portrait_wangxin.svg' },
     ],
@@ -28,7 +29,7 @@ export const BOSSES: Record<string, BossDef> = {
       { speaker: '王心', text: '……行。你过关。', portrait: './art/portrait_wangxin.svg' },
       { speaker: '王心', text: '明天早读，自己来交检讨。别让我去班里叫你。', portrait: './art/portrait_wangxin.svg' },
       kanno('知道了。谢谢王委员。'),
-      narrator('她把点名册合上，侧过身，给你让出一条路。'),
+      narrator('他把点名册合上，侧过身，给你让出一条路。'),
     ],
     lose: [
       { speaker: '王心', text: '说完了？', portrait: './art/portrait_wangxin.svg' },
@@ -99,7 +100,7 @@ export const BOSSES: Record<string, BossDef> = {
   youxiaotang: {
     id: 'youxiaotang',
     name: '右小唐',
-    title: '图书管理员',
+    title: '临时图书管理员',
     shortTitle: '书签',
     portrait: './art/portrait_youxiaotang.svg',
     sprite: 'youxiaotang',
@@ -107,8 +108,8 @@ export const BOSSES: Record<string, BossDef> = {
     conviction: 108,
     steps: 11,
     intro: [
-      narrator('右小唐从书堆后面露出半张脸，眼镜片反着白光。'),
-      { speaker: '右小唐', text: '图书角 21:00 关门。你还有十分钟。', portrait: './art/portrait_youxiaotang.svg' },
+      narrator('右小唐从书堆后面抬起头，绿色的眼睛在灯下很静。'),
+      { speaker: '右小唐', text: '十一今天让我临时看着图书角。21:00 关门，你还有十分钟。', portrait: './art/portrait_youxiaotang.svg' },
       kanno('我不是来看书的。'),
       { speaker: '右小唐', text: '那你更不该进来。', portrait: './art/portrait_youxiaotang.svg' },
     ],
@@ -146,7 +147,7 @@ export const BOSSES: Record<string, BossDef> = {
   shiyi: {
     id: 'shiyi',
     name: '十一',
-    title: '班主任',
+    title: '女班主任',
     shortTitle: '十一',
     portrait: './art/portrait_shiyi.svg',
     sprite: 'shiyi',
@@ -203,3 +204,21 @@ export function getBoss(id: string): BossDef {
   if (!boss) throw new Error(`Unknown boss ${id}`);
   return boss;
 }
+
+const LINE_TOPICS: Record<string, DebateTopic> = {
+  wx1: '规矩', wx2: '规矩', wx3: '面子', wx4: '证据', wx5: '双标', wx6: '证据',
+  wx7: '逻辑', wx8: '关系', wx9: '规矩', wx10: '责任', wx11: '责任', wx12: '时间',
+  dx1: '面子', dx2: '面子', dx3: '关系', dx4: '证据', dx5: '关系', dx6: '证据',
+  dx7: '面子', dx8: '面子', dx9: '证据', dx10: '情绪', dx11: '关系', dx12: '细节',
+  yx1: '证据', yx2: '细节', yx3: '规矩', yx4: '细节', yx5: '证据', yx6: '规矩',
+  yx7: '责任', yx8: '证据', yx9: '规矩', yx10: '细节', yx11: '情绪', yx12: '时间',
+  sy1: '规矩', sy2: '责任', sy3: '面子', sy4: '细节', sy5: '关系', sy6: '关系',
+  sy7: '情绪', sy8: '证据', sy9: '责任', sy10: '责任', sy11: '责任', sy12: '情绪',
+  sy13: '关系', sy14: '时间', sy15: '细节',
+};
+
+Object.values(BOSSES).forEach((boss) => {
+  boss.lines.forEach((line) => {
+    line.topic = LINE_TOPICS[line.id] ?? '规矩';
+  });
+});
