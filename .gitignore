@@ -16,3 +16,6 @@ scripts/_*.mjs
 
 _*.mjs
 *.tsbuildinfo
+.gh/
+.env
+.env.*
