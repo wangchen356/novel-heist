@@ -1,0 +1,184 @@
+export type CardType = 'logic' | 'emotion' | 'fact';
+export type CardRole = 'damage' | 'reveal' | 'delay';
+export type StatKey = 'stamina' | 'speed' | 'stealth' | 'oratory';
+export type BossId = 'wangxin' | 'daoxiaowang' | 'youxiaotang' | 'shiyi';
+export type EndingId = 'silent' | 'face-to-face';
+
+export interface CardDef {
+  id: string;
+  type: CardType;
+  role: CardRole;
+  name: string;
+  line: string;
+  desc: string;
+  base: number;
+}
+
+export interface Stats {
+  stamina: number;
+  speed: number;
+  stealth: number;
+  oratory: number;
+}
+
+export interface BossLine {
+  id: string;
+  text: string;
+  type: CardType;
+  phase: 1 | 2 | 3;
+}
+
+export interface BossDef {
+  id: BossId;
+  name: string;
+  title: string;
+  shortTitle: string;
+  portrait: string;
+  sprite: string;
+  accent: string;
+  conviction: number;
+  steps: number;
+  final?: boolean;
+  intro: SceneLine[];
+  stealIntro: SceneLine[];
+  win: SceneLine[];
+  lose: SceneLine[];
+  lines: BossLine[];
+}
+
+export interface SceneLine {
+  speaker: string;
+  text: string;
+  portrait?: string;
+  style?: 'normal' | 'novel' | 'whisper' | 'shout';
+  action?: 'ending-silent' | 'ending-faceto-face';
+}
+
+export interface PropDef {
+  key: string;
+  x: number;
+  y: number;
+  w?: number;
+  h?: number;
+  solid?: boolean;
+  blocksVision?: boolean;
+  alpha?: number;
+}
+
+export interface HideSpotDef {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+  prompt: string;
+}
+
+export interface FacePickupDef {
+  x: number;
+  y: number;
+  value: number;
+}
+
+export interface BossSpawn {
+  x: number;
+  y: number;
+  patrol: Array<{ x: number; y: number; wait?: number }>;
+  visionRange: number;
+  visionAngle: number;
+  hearingRange: number;
+  speed: number;
+}
+
+export interface ObjectiveDef {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+  prompt: string;
+  texture: string;
+}
+
+export interface ExitDef {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  prompt: string;
+  texture: string;
+}
+
+export interface LevelConfig {
+  id: string;
+  index: number;
+  name: string;
+  kicker: string;
+  time: string;
+  bossId: BossId;
+  playerStart: { x: number; y: number };
+  objective: ObjectiveDef;
+  exit: ExitDef;
+  boss: BossSpawn;
+  props: PropDef[];
+  hideSpots: HideSpotDef[];
+  facePickups: FacePickupDef[];
+  lightPools: Array<{ x: number; y: number; scale?: number }>;
+  wetZones?: Array<{ x: number; y: number; w: number; h: number }>;
+  intro: SceneLine[];
+  complete: SceneLine[];
+  objectiveAfter: string;
+  finalStealthOnly?: boolean;
+}
+
+export interface Settings {
+  volume: number;
+  muted: boolean;
+  showTouchControls: boolean;
+  buttonScale: number;
+  reduceMotion: boolean;
+}
+
+export interface TouchLayout {
+  x: number;
+  y: number;
+}
+
+export interface SaveData {
+  version: number;
+  started: boolean;
+  completed: boolean;
+  levelIndex: number;
+  face: number;
+  stats: Stats;
+  deck: string[];
+  combatOccurred: boolean;
+  deckUnlocked: boolean;
+  notebook: Record<string, CardType>;
+  cycleKnown: boolean;
+  endings: string[];
+  caughtCount: number;
+  stealthClears: number;
+  bossWins: number;
+  startedAt: number;
+  updatedAt: number;
+  currentRunEnding?: string;
+}
+
+export interface RunRewards {
+  face: number;
+  method: 'stealth' | 'debate';
+  bossId?: BossId;
+}
+
+export interface HudState {
+  area: string;
+  time: string;
+  objective: string;
+  face: number;
+  alert: number;
+  stamina: number;
+  maxStamina: number;
+  hidden?: boolean;
+}
