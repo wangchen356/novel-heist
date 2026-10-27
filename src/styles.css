@@ -1539,7 +1539,7 @@ button:focus-visible {
 
 .play-card {
   position: relative;
-  min-height: clamp(104px, 13.5vh, 148px);
+  min-height: clamp(100px, 12.8vh, 132px);
   padding: 12px 13px 10px;
   border: 3px solid var(--ink);
   background: var(--paper-bright);
