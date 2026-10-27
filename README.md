@@ -48,8 +48,9 @@ pnpm preview
 
 ## 部署
 
-推送到 `main` 后，GitHub Actions 会自动构建并发布到 GitHub Pages。  
-仓库 Settings → Pages → Source 选择 **GitHub Actions**。
+本项目使用 **gh-pages 分支**发布静态站点：`pnpm build` 后把 `dist/` 内容推送到仓库的 `gh-pages` 分支，再在 Settings → Pages 中将 Source 设为 **Deploy from a branch → gh-pages / (root)**。
+
+线上地址：`https://wangchen356.github.io/novel-heist/`
 
 ## 制作
 
