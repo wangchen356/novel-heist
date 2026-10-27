@@ -92,8 +92,8 @@ const RAW_LEVELS: RawLevel[] = [
       { id: 'curtain-1', x: 1080, y: 300, w: 80, h: 160, label: '窗帘后面', prompt: 'E 躲到窗帘后面' },
     ],
     facePickups: [
-      { x: 1200, y: 110, value: 10 },
-      { x: 1180, y: 470, value: 10 },
+      { x: 1200, y: 110, value: 5 },
+      { x: 1180, y: 470, value: 5 },
     ],
     lightPools: [
       { x: 320, y: 280, scale: 1.3 },
@@ -192,8 +192,8 @@ const RAW_LEVELS: RawLevel[] = [
       { id: 'bucket', x: 300, y: 520, w: 80, h: 62, label: '拖把桶后面', prompt: 'E 躲到拖把桶后面' },
     ],
     facePickups: [
-      { x: 100, y: 180, value: 10 },
-      { x: 1200, y: 610, value: 10 },
+      { x: 100, y: 180, value: 5 },
+      { x: 1200, y: 610, value: 5 },
     ],
     lightPools: [
       { x: 360, y: 330, scale: 1.2 },
@@ -290,8 +290,8 @@ const RAW_LEVELS: RawLevel[] = [
       { id: 'sofa', x: 940, y: 660, w: 172, h: 50, label: '沙发后面', prompt: 'E 躲到沙发后面' },
     ],
     facePickups: [
-      { x: 120, y: 120, value: 10 },
-      { x: 1200, y: 300, value: 10 },
+      { x: 120, y: 120, value: 5 },
+      { x: 1200, y: 300, value: 5 },
     ],
     lightPools: [
       { x: 360, y: 330, scale: 1.2 },
@@ -379,8 +379,8 @@ const RAW_LEVELS: RawLevel[] = [
       { id: 'cart', x: 880, y: 550, w: 120, h: 48, label: '书车后面', prompt: 'E 躲到书车后面' },
     ],
     facePickups: [
-      { x: 120, y: 620, value: 10 },
-      { x: 1200, y: 620, value: 10 },
+      { x: 120, y: 620, value: 5 },
+      { x: 1200, y: 620, value: 5 },
     ],
     lightPools: [
       { x: 520, y: 250, scale: 1.5 },

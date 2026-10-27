@@ -43,6 +43,8 @@ export interface BossLine {
   phase: 1 | 2 | 3;
 }
 
+export type BossMechanic = 'heal' | 'summon' | 'double' | 'final';
+
 export interface BossDef {
   id: BossId;
   name: string;
@@ -53,12 +55,14 @@ export interface BossDef {
   accent: string;
   conviction: number;
   steps: number;
+  mechanic: BossMechanic;
   final?: boolean;
   intro: SceneLine[];
   stealIntro: SceneLine[];
   win: SceneLine[];
   lose: SceneLine[];
   lines: BossLine[];
+  idleLines?: string[];
 }
 
 export interface SceneLine {

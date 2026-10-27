@@ -715,7 +715,7 @@ export class GameApp {
     this.currentScene?.pauseGameplay();
     const level = getLevel(payload.levelIndex);
     const boss = getBoss(level.bossId);
-    const baseReward = payload.method === 'debate' ? 65 : 40;
+    const baseReward = payload.method === 'debate' ? 45 : 30;
     this.save.face += baseReward;
     if (payload.method === 'debate') {
       this.save.bossWins += 1;
@@ -805,10 +805,10 @@ export class GameApp {
         const value = this.save.stats[key];
         const cost = upgradeCost(value);
         const disabled = !canUpgrade(this.save, key) ? 'disabled' : '';
-        const maxed = value >= 5;
+        const maxed = value >= 4;
         return `<div class="stat-row">
           <div class="stat-name">${meta.label}</div>
-          <div><div class="stat-desc">${meta.desc}</div><div class="stat-level">Lv.${value} / 5</div></div>
+          <div><div class="stat-desc">${meta.desc}</div><div class="stat-level">Lv.${value} / 4</div></div>
           <button class="upgrade-button" data-upgrade="${key}" ${disabled} type="button">${maxed ? '已满' : `${cost} 面子`}</button>
         </div>`;
       })

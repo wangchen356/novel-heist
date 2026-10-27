@@ -156,17 +156,20 @@ export function stealthScale(stats: SaveData['stats']): number {
   return 1 - (stats.stealth - 1) * 0.08;
 }
 
+export const MAX_STAT_LEVEL = 4;
+const UPGRADE_COSTS = [30, 55, 85, 125];
+
 export function upgradeCost(level: number): number {
-  return 25 + (level - 1) * 20;
+  return UPGRADE_COSTS[Math.min(Math.max(1, level), MAX_STAT_LEVEL) - 1] ?? 125;
 }
 
 export function canUpgrade(data: SaveData, key: StatKey): boolean {
-  return data.stats[key] < 5 && data.face >= upgradeCost(data.stats[key]);
+  return data.stats[key] < MAX_STAT_LEVEL && data.face >= upgradeCost(data.stats[key]);
 }
 
 export function upgradeStat(data: SaveData, key: StatKey): boolean {
   const cost = upgradeCost(data.stats[key]);
-  if (data.stats[key] >= 5 || data.face < cost) return false;
+  if (data.stats[key] >= MAX_STAT_LEVEL || data.face < cost) return false;
   data.face -= cost;
   data.stats[key] += 1;
   saveGame(data);

@@ -50,6 +50,9 @@ interface BossRuntime {
   stuckTimer: number;
   mark: Phaser.GameObjects.Text;
   nameplate: Phaser.GameObjects.Text;
+  bubble: Phaser.GameObjects.Text;
+  bubbleTimer: number;
+  bubbleCooldown: number;
 }
 
 export class StealthScene extends Phaser.Scene {
@@ -446,6 +449,19 @@ export class StealthScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(119)
       .setAlpha(0.75);
+    const bubble = this.add
+      .text(spawn.x, spawn.y - 78, '', {
+        fontFamily: '"Microsoft YaHei", sans-serif',
+        fontSize: '11px',
+        color: '#211d1a',
+        backgroundColor: '#f4ead8f2',
+        padding: { x: 8, y: 5 },
+        wordWrap: { width: 228, useAdvancedWrap: true },
+        align: 'center',
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(121)
+      .setAlpha(0);
     this.bossRuntime = {
       spawn,
       def,
@@ -463,6 +479,9 @@ export class StealthScene extends Phaser.Scene {
       stuckTimer: 0,
       mark,
       nameplate,
+      bubble,
+      bubbleTimer: 0,
+      bubbleCooldown: 3.2,
     };
   }
 
@@ -616,8 +635,32 @@ export class StealthScene extends Phaser.Scene {
     this.boss.setDepth(this.boss.y + 30);
     boss.mark.setPosition(this.boss.x, this.boss.y - 62);
     boss.nameplate.setPosition(this.boss.x, this.boss.y + 52);
+    this.updateBossBubble(boss, dt, visible);
     this.bossRuntime.alert = boss.alert;
     this.updateBossMark(visible);
+  }
+
+  private updateBossBubble(boss: BossRuntime, dt: number, visible: boolean): void {
+    const bubble = boss.bubble;
+    bubble.setPosition(this.boss.x, this.boss.y - 78);
+    if (visible || boss.state === 'chase' || this.hidden) {
+      bubble.setAlpha(0);
+      boss.bubbleTimer = 0;
+      return;
+    }
+    if (boss.bubbleTimer > 0) {
+      boss.bubbleTimer -= dt;
+      if (boss.bubbleTimer <= 0) bubble.setAlpha(0);
+      return;
+    }
+    boss.bubbleCooldown -= dt;
+    if (boss.bubbleCooldown > 0) return;
+    const lines = boss.def.idleLines ?? [];
+    if (!lines.length) return;
+    bubble.setText(lines[Math.floor(Math.random() * lines.length)]);
+    bubble.setAlpha(1);
+    boss.bubbleTimer = 3.1;
+    boss.bubbleCooldown = 7.5 + Math.random() * 6;
   }
 
   private updatePatrol(boss: BossRuntime, dt: number, time: number): void {

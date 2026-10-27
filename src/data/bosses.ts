@@ -12,8 +12,9 @@ export const BOSSES: Record<string, BossDef> = {
     portrait: './art/portrait_wangxin.svg',
     sprite: 'wangxin',
     accent: '#486b91',
-    conviction: 82,
-    steps: 10,
+    conviction: 128,
+    steps: 9,
+    mechanic: 'heal',
     intro: [
       narrator('王心从点名册后面抬起头。粉笔灰在灯下慢慢飘。'),
       { speaker: '王心', text: '十一让我今晚看着晚自习。你回座位，我可以不记。', portrait: './art/portrait_wangxin.svg' },
@@ -50,6 +51,12 @@ export const BOSSES: Record<string, BossDef> = {
       { id: 'wx11', phase: 3, type: 'emotion', text: '你要是真把书弄丢了，难过的又不是我。' },
       { id: 'wx12', phase: 3, type: 'logic', text: '现在回去，我只记你一次。再往前走，就是三次。' },
     ],
+    idleLines: [
+      '怎么又是我看晚自习……',
+      '十一，你为什么不自己来。',
+      '后门钥匙？我没拿。',
+      '别以为我坐第一排就看不见。',
+    ],
   },
   daoxiaowang: {
     id: 'daoxiaowang',
@@ -59,8 +66,9 @@ export const BOSSES: Record<string, BossDef> = {
     portrait: './art/portrait_daoxiaowang.svg',
     sprite: 'daoxiaowang',
     accent: '#c84938',
-    conviction: 96,
-    steps: 10,
+    conviction: 150,
+    steps: 9,
+    mechanic: 'summon',
     intro: [
       narrator('岛小王把拖把往地上一杵，水花溅到你的鞋上。'),
       { speaker: '岛小王', text: '哟，这不是三班的 Kanno 吗。晚自习也敢出来？', portrait: './art/portrait_daoxiaowang.svg' },
@@ -96,6 +104,12 @@ export const BOSSES: Record<string, BossDef> = {
       { id: 'dx11', phase: 3, type: 'logic', text: '大家各退一步。你把钥匙留下，我当没这回事。' },
       { id: 'dx12', phase: 3, type: 'fact', text: '你走错方向了。办公室在楼上，不在我身后。' },
     ],
+    idleLines: [
+      '这层楼今晚归我管。',
+      '别踩我刚拖的地。',
+      '谁在那边？',
+      '王心自己怎么不下来。',
+    ],
   },
   youxiaotang: {
     id: 'youxiaotang',
@@ -105,8 +119,9 @@ export const BOSSES: Record<string, BossDef> = {
     portrait: './art/portrait_youxiaotang.svg',
     sprite: 'youxiaotang',
     accent: '#2e5547',
-    conviction: 108,
-    steps: 11,
+    conviction: 172,
+    steps: 9,
+    mechanic: 'double',
     intro: [
       narrator('右小唐从书堆后面抬起头，绿色的眼睛在灯下很静。'),
       { speaker: '右小唐', text: '十一今天让我临时看着图书角。21:00 关门，你还有十分钟。', portrait: './art/portrait_youxiaotang.svg' },
@@ -143,6 +158,12 @@ export const BOSSES: Record<string, BossDef> = {
       { id: 'yx11', phase: 3, type: 'emotion', text: '你根本不是来还书的。你只是想让自己心里好受一点。' },
       { id: 'yx12', phase: 3, type: 'logic', text: '现在转身，我还能当你是来还书的。' },
     ],
+    idleLines: [
+      '安静。',
+      '这本书还没登记。',
+      '折角……我记住了。',
+      '十一说只看十分钟。',
+    ],
   },
   shiyi: {
     id: 'shiyi',
@@ -152,8 +173,9 @@ export const BOSSES: Record<string, BossDef> = {
     portrait: './art/portrait_shiyi.svg',
     sprite: 'shiyi',
     accent: '#f0c04e',
-    conviction: 132,
-    steps: 12,
+    conviction: 198,
+    steps: 7,
+    mechanic: 'final',
     final: true,
     intro: [
       narrator('十一放下红笔，看着你，像在看一道做错的题。'),
@@ -193,6 +215,12 @@ export const BOSSES: Record<string, BossDef> = {
       { id: 'sy13', phase: 3, type: 'emotion', text: '我看着你从高一走到现在。你不是坏孩子。' },
       { id: 'sy14', phase: 3, type: 'logic', text: '把书还给他，然后来办公室找我。这是最后一次。' },
       { id: 'sy15', phase: 3, type: 'fact', text: '你手里的书，封面已经卷了。你打算怎么还。' },
+    ],
+    idleLines: [
+      '灯还亮着，你就还没回座位。',
+      '别让我去班里找你。',
+      '书的事，等会儿再说。',
+      '这届学生，真不让人省心。',
     ],
   },
 };
