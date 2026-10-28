@@ -15,6 +15,15 @@ const RAW_LEVELS: RawLevel[] = [
     time: '19:47',
     bossId: 'wangxin',
     playerStart: { x: 1060, y: 600 },
+    keySetup: {
+      mode: 'color',
+      note: { x: 612, y: 150, text: '白色' },
+      colorKeys: [
+        { id: 'red-key', x: 900, y: 620, color: 'red' },
+        { id: 'white-key', x: 300, y: 250, color: 'white', correct: true },
+        { id: 'yellow-key', x: 520, y: 620, color: 'yellow' },
+      ],
+    },
     objective: {
       x: 612,
       y: 150,
@@ -123,6 +132,16 @@ const RAW_LEVELS: RawLevel[] = [
     time: '20:03',
     bossId: 'daoxiaowang',
     playerStart: { x: 120, y: 620 },
+    keySetup: {
+      mode: 'stall',
+      stallSpots: [
+        { x: 250, y: 200 },
+        { x: 450, y: 200 },
+        { x: 650, y: 200 },
+        { x: 850, y: 200 },
+        { x: 1050, y: 200 },
+      ],
+    },
     objective: {
       x: 1110,
       y: 210,
@@ -224,14 +243,25 @@ const RAW_LEVELS: RawLevel[] = [
     time: '20:21',
     bossId: 'youxiaotang',
     playerStart: { x: 120, y: 620 },
+    keySetup: {
+      mode: 'teleport',
+      teleportInterval: 5000,
+      teleportSpots: [
+        { x: 1090, y: 210 },
+        { x: 420, y: 400 },
+        { x: 660, y: 330 },
+        { x: 940, y: 600 },
+        { x: 300, y: 330 },
+      ],
+    },
     objective: {
       x: 1090,
       y: 210,
       w: 58,
       h: 54,
       label: '办公室门禁卡',
-      prompt: 'E 从书车上拿走办公室门禁卡',
-      texture: 'prop_objective_key',
+      prompt: 'E 拿走飘来飘去的办公室门禁卡',
+      texture: 'prop_objective_card',
     },
     objectiveSpots: [
       { x: 420, y: 400 },
@@ -318,6 +348,7 @@ const RAW_LEVELS: RawLevel[] = [
     time: '20:39',
     bossId: 'shiyi',
     playerStart: { x: 760, y: 600 },
+    speedMultiplier: 0.6,
     objective: {
       x: 520,
       y: 150,
@@ -464,6 +495,17 @@ function compactLevel(raw: RawLevel): LevelConfig {
       w: sw(zone.w),
       h: sw(zone.h),
     })),
+    keySetup: raw.keySetup
+      ? {
+          ...raw.keySetup,
+          note: raw.keySetup.note
+            ? { ...raw.keySetup.note, x: sx(raw.keySetup.note.x), y: sy(raw.keySetup.note.y) }
+            : undefined,
+          colorKeys: raw.keySetup.colorKeys?.map((key) => ({ ...key, x: sx(key.x), y: sy(key.y) })),
+          stallSpots: raw.keySetup.stallSpots?.map((spot) => ({ x: sx(spot.x), y: sy(spot.y) })),
+          teleportSpots: raw.keySetup.teleportSpots?.map((spot) => ({ x: sx(spot.x), y: sy(spot.y) })),
+        }
+      : undefined,
     room: ROOM,
     zoom: 1.1,
   };

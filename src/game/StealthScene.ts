@@ -68,6 +68,15 @@ export class StealthScene extends Phaser.Scene {
   private hiddenSpot: HideSpotRuntime | null = null;
   private hasObjective = false;
   private objectiveSpot = { x: 0, y: 0 };
+  private noteRead = false;
+  private colorKeys: Array<{
+    def: { id: string; x: number; y: number; color: string; correct?: boolean };
+    sprite: Phaser.GameObjects.Image;
+    glow: Phaser.GameObjects.Image;
+  }> = [];
+  private noteGlow: Phaser.GameObjects.Image | null = null;
+  private stallKeySpot = { x: 0, y: 0 };
+  private teleportTimer = 0;
   private collectedFace = 0;
   private stamina = 100;
   private maxStamina = 100;
@@ -112,11 +121,28 @@ export class StealthScene extends Phaser.Scene {
     this.hidden = false;
     this.hiddenSpot = null;
     this.hasObjective = false;
+    this.noteRead = false;
+    this.colorKeys = [];
+    this.noteGlow = null;
+    this.stallKeySpot = { x: 0, y: 0 };
+    this.teleportTimer = 0;
     const objectiveSpots = this.level.objectiveSpots ?? [];
     this.objectiveSpot =
       objectiveSpots.length > 0
         ? objectiveSpots[Math.floor(Math.random() * objectiveSpots.length)]
         : { x: this.level.objective.x, y: this.level.objective.y };
+    const keySetup = this.level.keySetup;
+    if (keySetup?.mode === 'color') {
+      const correct = keySetup.colorKeys?.find((key) => key.correct) ?? keySetup.colorKeys?.[0];
+      if (correct) this.objectiveSpot = { x: correct.x, y: correct.y };
+    } else if (keySetup?.mode === 'stall' && keySetup.stallSpots?.length) {
+      const spot = keySetup.stallSpots[Math.floor(Math.random() * keySetup.stallSpots.length)];
+      this.objectiveSpot = { x: spot.x, y: spot.y };
+      this.stallKeySpot = { x: spot.x, y: spot.y };
+    } else if (keySetup?.mode === 'teleport' && keySetup.teleportSpots?.length) {
+      const spot = keySetup.teleportSpots[Math.floor(Math.random() * keySetup.teleportSpots.length)];
+      this.objectiveSpot = { x: spot.x, y: spot.y };
+    }
     this.collectedFace = 0;
     this.stamina = staminaMax(this.save.stats);
     this.maxStamina = this.stamina;
@@ -214,6 +240,7 @@ export class StealthScene extends Phaser.Scene {
     this.updatePlayer(dt);
     this.updateBoss(dt, time);
     this.updatePickups();
+    this.updateKeyTeleport(dt);
     this.updateInteraction();
     this.updateMarkers();
     this.updateVision();
@@ -341,33 +368,51 @@ export class StealthScene extends Phaser.Scene {
   private buildObjectiveAndExit(): void {
     const obj = this.level.objective;
     const spot = this.objectiveSpot;
-    this.objectiveGlow = this.add
-      .image(spot.x, spot.y, 'prop_lightpool')
-      .setScale(0.42)
-      .setTint(0xf0c04e)
-      .setAlpha(0.7)
-      .setDepth(500)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets: this.objectiveGlow,
-      alpha: 0.25,
-      scale: 0.52,
-      duration: 1100,
-      yoyo: true,
-      repeat: -1,
-    });
-    this.objectiveSprite = this.add
-      .image(spot.x, spot.y, obj.texture)
-      .setDisplaySize(42, 42)
-      .setDepth(510);
-    this.tweens.add({
-      targets: this.objectiveSprite,
-      y: spot.y - 6,
-      duration: 900,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.inOut',
-    });
+    const setup = this.level.keySetup;
+    if (setup?.mode === 'color') {
+      this.buildColorKeys();
+    } else if (setup?.mode === 'stall') {
+      // The toilet key has no world icon; the stall itself is the clue.
+      this.objectiveSprite = this.add
+        .image(spot.x, spot.y, obj.texture)
+        .setDisplaySize(38, 38)
+        .setDepth(510)
+        .setAlpha(0);
+      this.objectiveGlow = this.add
+        .image(spot.x, spot.y, 'prop_lightpool')
+        .setScale(0.3)
+        .setTint(0xf0c04e)
+        .setAlpha(0)
+        .setDepth(500);
+    } else {
+      this.objectiveGlow = this.add
+        .image(spot.x, spot.y, 'prop_lightpool')
+        .setScale(0.42)
+        .setTint(0xf0c04e)
+        .setAlpha(0.7)
+        .setDepth(500)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: this.objectiveGlow,
+        alpha: 0.25,
+        scale: 0.52,
+        duration: 1100,
+        yoyo: true,
+        repeat: -1,
+      });
+      this.objectiveSprite = this.add
+        .image(spot.x, spot.y, obj.texture)
+        .setDisplaySize(42, 42)
+        .setDepth(510);
+      this.tweens.add({
+        targets: this.objectiveSprite,
+        y: spot.y - 6,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut',
+      });
+    }
 
     const exit = this.level.exit;
     this.exitSprite = this.add
@@ -382,6 +427,69 @@ export class StealthScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(3)
       .setBlendMode(Phaser.BlendModes.ADD);
+  }
+
+  private buildColorKeys(): void {
+    const setup = this.level.keySetup;
+    if (!setup?.colorKeys?.length) return;
+    if (setup.note) {
+      this.noteGlow = this.add
+        .image(setup.note.x, setup.note.y, 'prop_lightpool')
+        .setScale(0.26)
+        .setTint(0xf0c04e)
+        .setAlpha(0.24)
+        .setDepth(500)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: this.noteGlow,
+        alpha: 0.08,
+        scale: 0.34,
+        duration: 1800,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+    const colors: Record<string, number> = {
+      red: 0xc84938,
+      white: 0xf4ead8,
+      yellow: 0xf0c04e,
+    };
+    setup.colorKeys.forEach((key) => {
+      const tint = colors[key.color] ?? 0xf0c04e;
+      const glow = this.add
+        .image(key.x, key.y, 'prop_lightpool')
+        .setScale(0.28)
+        .setTint(tint)
+        .setAlpha(0.35)
+        .setDepth(500)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      const texture =
+        key.color === 'red' ? 'prop_key_red' : key.color === 'white' ? 'prop_key_white' : 'prop_key_yellow';
+      const sprite = this.add
+        .image(key.x, key.y, texture)
+        .setDisplaySize(40, 40)
+        .setDepth(510);
+      this.tweens.add({
+        targets: [sprite, glow],
+        y: key.y - 5,
+        duration: 850,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut',
+      });
+      this.colorKeys.push({ def: key, sprite, glow });
+      if (key.correct) {
+        this.objectiveSprite = sprite;
+        this.objectiveGlow = glow;
+        this.objectiveSpot = { x: key.x, y: key.y };
+      }
+    });
+    if (!this.objectiveSprite) {
+      const first = this.colorKeys[0];
+      this.objectiveSprite = first.sprite;
+      this.objectiveGlow = first.glow;
+      this.objectiveSpot = { x: first.def.x, y: first.def.y };
+    }
   }
 
   private buildFacePickups(): void {
@@ -499,12 +607,13 @@ export class StealthScene extends Phaser.Scene {
     const wet = this.isWet(this.player.x, this.player.y);
     const canSprint = input.sprint && !input.crouch && this.stamina > 0;
     const moving = move.lengthSq() > 0;
+    const speedMul = this.level.speedMultiplier ?? 1;
     if (this.dodgeTimer > 0) {
       this.dodgeTimer -= dt;
-      this.player.setVelocity(this.dodgeDir.x * 540, this.dodgeDir.y * 540);
+      this.player.setVelocity(this.dodgeDir.x * 540 * speedMul, this.dodgeDir.y * 540 * speedMul);
     } else {
-      let speed = (input.crouch ? 76 : 140) * speedScale(this.save.stats);
-      if (canSprint) speed = 224 * speedScale(this.save.stats);
+      let speed = (input.crouch ? 76 : 140) * speedScale(this.save.stats) * speedMul;
+      if (canSprint) speed = 224 * speedScale(this.save.stats) * speedMul;
       this.player.setVelocity(move.x * speed, move.y * speed);
     }
     this.player.setDepth(this.player.y + 30);
@@ -646,6 +755,13 @@ export class StealthScene extends Phaser.Scene {
     if (visible || boss.state === 'chase' || this.hidden) {
       bubble.setAlpha(0);
       boss.bubbleTimer = 0;
+      return;
+    }
+    if (this.level.keySetup?.mode === 'stall' && !this.hasObjective) {
+      bubble.setText('坏了，钥匙好像被我搞到隔间里去了。');
+      bubble.setAlpha(1);
+      boss.bubbleTimer = 3.6;
+      boss.bubbleCooldown = 4.8;
       return;
     }
     if (boss.bubbleTimer > 0) {
@@ -846,6 +962,33 @@ export class StealthScene extends Phaser.Scene {
     g.strokeCircle(x, y, 22);
   }
 
+  private updateKeyTeleport(dt: number): void {
+    const setup = this.level.keySetup;
+    if (setup?.mode !== 'teleport' || this.hasObjective) return;
+    const spots = setup.teleportSpots ?? [];
+    if (spots.length === 0) return;
+    this.teleportTimer += dt * 1000;
+    if (this.teleportTimer < (setup.teleportInterval ?? 5000)) return;
+    this.teleportTimer = 0;
+    const options = spots.filter(
+      (spot) => Phaser.Math.Distance.Between(spot.x, spot.y, this.objectiveSpot.x, this.objectiveSpot.y) > 70,
+    );
+    const pool = options.length > 0 ? options : spots;
+    const spot = pool[Math.floor(Math.random() * pool.length)];
+    this.objectiveSpot = { x: spot.x, y: spot.y };
+    this.tweens.killTweensOf(this.objectiveSprite);
+    this.objectiveSprite.setPosition(spot.x, spot.y);
+    this.objectiveGlow.setPosition(spot.x, spot.y);
+    this.tweens.add({
+      targets: this.objectiveSprite,
+      y: spot.y - 6,
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    });
+  }
+
   private updatePickups(): void {
     this.facePickups.forEach((pickup) => {
       if (pickup.picked) return;
@@ -867,12 +1010,30 @@ export class StealthScene extends Phaser.Scene {
       return;
     }
     const interact = input.consume('interact');
+    const setup = this.level.keySetup;
+    const mode = setup?.mode ?? 'normal';
     const nearHide = this.nearestHide();
-    const nearObjective = this.distanceTo(this.objectiveSpot.x, this.objectiveSpot.y) < 74 && !this.hasObjective;
+    const nearObject = this.distanceTo(this.objectiveSpot.x, this.objectiveSpot.y) < 74 && !this.hasObjective;
+    const nearObjective = mode === 'normal' || mode === 'teleport' ? nearObject : false;
     const nearExit = this.distanceTo(this.level.exit.x, this.level.exit.y) < 92;
+    const nearNote =
+      mode === 'color' && setup?.note
+        ? this.distanceTo(setup.note.x, setup.note.y) < 72 && !this.noteRead
+        : false;
+    const nearColor = mode === 'color' && !this.hasObjective ? this.nearestColorKey() : null;
+    const nearStall =
+      mode === 'stall' && !this.hasObjective
+        ? this.distanceTo(this.stallKeySpot.x, this.stallKeySpot.y) < 82
+        : false;
 
     if (interact) {
-      if (nearObjective) {
+      if (nearNote) {
+        this.readNote();
+      } else if (nearColor) {
+        this.tryColorKey(nearColor);
+      } else if (nearStall) {
+        this.collectObjective();
+      } else if (nearObjective) {
         this.collectObjective();
       } else if (nearExit) {
         if (this.hasObjective) this.finishStealth();
@@ -891,8 +1052,42 @@ export class StealthScene extends Phaser.Scene {
     if (nearObjective) this.setPrompt(this.level.objective.prompt);
     else if (nearExit) {
       this.setPrompt(this.hasObjective ? this.level.exit.prompt : '门锁着。先找到钥匙。');
-    } else if (nearHide) this.setPrompt(nearHide.prompt);
+    } else if (nearHide && !nearStall) this.setPrompt(nearHide.prompt);
     else this.setPrompt(null);
+  }
+
+  private nearestColorKey(): { x: number; y: number; color: string; correct?: boolean } | null {
+    let best: { x: number; y: number; color: string; correct?: boolean } | null = null;
+    let bestDist = 62;
+    for (const key of this.colorKeys) {
+      const dist = this.distanceTo(key.def.x, key.def.y);
+      if (dist < bestDist) {
+        best = key.def;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
+  private readNote(): void {
+    const note = this.level.keySetup?.note;
+    if (!note || this.noteRead) return;
+    this.noteRead = true;
+    audio.pickup();
+    this.toast(`纸条上写着：${note.text}。`);
+  }
+
+  private tryColorKey(key: { x: number; y: number; color: string; correct?: boolean }): void {
+    if (!this.noteRead) {
+      this.toast('你还不知道该拿哪一把。');
+      return;
+    }
+    if (key.correct) {
+      this.collectObjective();
+      return;
+    }
+    this.toast('不是这把。');
+    this.emitNoise(key.x, key.y, 0.65, 'key');
   }
 
   private nearestHide(): HideSpotRuntime | null {
@@ -945,16 +1140,26 @@ export class StealthScene extends Phaser.Scene {
     this.hasObjective = true;
     audio.pickup();
     this.toast(`拿到${this.level.objective.label}。现在离开这里。`);
-    this.tweens.add({
-      targets: [this.objectiveSprite, this.objectiveGlow],
-      alpha: 0,
-      scale: 0.2,
-      duration: 260,
-      onComplete: () => {
-        this.objectiveSprite.destroy();
-        this.objectiveGlow.destroy();
-      },
-    });
+    if (this.colorKeys.length > 0) {
+      this.colorKeys.forEach((key) => {
+        key.sprite.destroy();
+        key.glow.destroy();
+      });
+      this.colorKeys = [];
+      this.noteGlow?.destroy();
+      this.noteGlow = null;
+    } else {
+      this.tweens.add({
+        targets: [this.objectiveSprite, this.objectiveGlow],
+        alpha: 0,
+        scale: 0.2,
+        duration: 260,
+        onComplete: () => {
+          this.objectiveSprite.destroy();
+          this.objectiveGlow.destroy();
+        },
+      });
+    }
     this.exitSprite.clearTint();
     this.exitSprite.setTint(0xf0c04e);
     this.tweens.add({

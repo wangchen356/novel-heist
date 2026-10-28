@@ -52,6 +52,12 @@ export class DebateController {
   private playerDamageMod = 0;
   private sealedCardId: string | null = null;
   private responses: CardDef[] = [];
+  private mentalState: 'arrogant' | 'panic' | 'afraid' | null = null;
+  private mentalRounds = 0;
+  private mentalTriggered = new Set<number>();
+  private lastMental: 'arrogant' | 'panic' | 'afraid' | null = null;
+  private pleaStacks = 0;
+  private doubtRounds = 0;
   private phase: 1 | 2 | 3 = 1;
   private turn = 1;
   private combo = 0;
@@ -107,6 +113,12 @@ export class DebateController {
     this.playerDamageMod = 0;
     this.sealedCardId = null;
     this.responses = [];
+    this.mentalState = null;
+    this.mentalRounds = 0;
+    this.mentalTriggered = new Set<number>();
+    this.lastMental = null;
+    this.pleaStacks = 0;
+    this.doubtRounds = 0;
     this.log = [{ text: `第 1 回合，${this.boss.name}先开口了。` }];
     this.combo = 0;
     this.comboPending = 0;
@@ -136,6 +148,9 @@ export class DebateController {
       } else if (event.code === 'Digit3' || event.code === 'Numpad3') {
         event.preventDefault();
         this.playIndex(2);
+      } else if (event.code === 'Digit4' || event.code === 'Numpad4') {
+        event.preventDefault();
+        this.playIndex(3);
       } else if (event.code === 'Space' || event.code === 'Enter') {
         if (this.finished) {
           event.preventDefault();
@@ -222,10 +237,81 @@ export class DebateController {
     }
   }
 
+  private isTwoCardMode(): boolean {
+    return this.mechanic === 'double' || this.mentalState === 'arrogant';
+  }
+
+  private handTarget(): number {
+    return this.mentalState === 'panic' ? 4 : 3;
+  }
+
+  private mentalName(): string {
+    if (this.mentalState === 'arrogant') return '跋扈';
+    if (this.mentalState === 'panic') return '慌乱';
+    if (this.mentalState === 'afraid') return '害怕';
+    return '';
+  }
+
+  private mentalLine(): string {
+    if (this.mentalState === 'arrogant') return '行，今天谁也别想讲道理。';
+    if (this.mentalState === 'panic') return '等等，我刚刚说到哪了？';
+    if (this.mentalState === 'afraid') return '十一……不是，老师，我错了。';
+    return '';
+  }
+
+  private mentalBannerHtml(): string {
+    if (!this.mentalState) return '';
+    const extras: string[] = [];
+    if (this.doubtRounds > 0) extras.push(`疑虑 ${this.doubtRounds} 回合 · 克制伤害 +60%`);
+    if (this.pleaStacks > 0) extras.push(`求饶 ${this.pleaStacks} 层`);
+    return `
+      <div class="mental-banner mental-${this.mentalState}">
+        <div class="mental-title"><span>KANNO / 状态</span><b>${this.mentalName()}</b></div>
+        <p>${this.mentalLine()}</p>
+        <div class="mental-meta"><span>剩余 ${this.mentalRounds} 回合</span>${extras.map((text) => `<em>${text}</em>`).join('')}</div>
+      </div>
+    `;
+  }
+
+  private maybeTriggerMentalState(): void {
+    if (this.mentalState) return;
+    for (const threshold of [8, 6, 4]) {
+      if (this.stepsLeft > threshold || this.mentalTriggered.has(threshold)) continue;
+      this.mentalTriggered.add(threshold);
+      const pool = (['arrogant', 'panic', 'afraid'] as const).filter((state) => state !== this.lastMental);
+      const state = pool[Math.floor(Math.random() * pool.length)] ?? 'arrogant';
+      this.mentalState = state;
+      this.mentalRounds = 2;
+      this.lastMental = state;
+      this.log.push({ text: `Kanno 进入了【${this.mentalName()}】：${this.mentalLine()}`, kind: state === 'arrogant' ? 'good' : 'bad' });
+      audio.alert(state === 'arrogant' ? 0.45 : 0.3);
+      return;
+    }
+  }
+
+  private tickMentalState(): void {
+    if (this.doubtRounds > 0) {
+      this.doubtRounds -= 1;
+      if (this.doubtRounds === 0) this.log.push({ text: `${this.boss.name}皱了皱眉，疑虑散了。`, kind: 'good' });
+    }
+    if (this.mentalRounds > 0) {
+      this.mentalRounds -= 1;
+      if (this.mentalRounds === 0) {
+        if (this.mentalState === 'afraid' && this.pleaStacks > 0) {
+          this.stepsLeft += this.pleaStacks;
+          this.log.push({ text: `Kanno 把 ${this.pleaStacks} 层求饶都说了出来。教导主任晚了 ${this.pleaStacks} 回合。`, kind: 'good' });
+        }
+        this.mentalState = null;
+        this.pleaStacks = 0;
+        audio.click();
+      }
+    }
+  }
+
   private render(): void {
     this.root.classList.remove('hidden');
     this.root.innerHTML = `
-      <div class="debate-shell">
+      <div class="debate-shell ${this.mentalState ? `mental-active mental-${this.mentalState}` : ''} ${this.mentalState === 'panic' ? 'hand-four' : ''}">
         <div class="debate-top">
           <div class="debate-boss-meta">
             <div class="debate-boss-badge">${this.boss.name.slice(0, 1)}</div>
@@ -247,6 +333,7 @@ export class DebateController {
             <button class="debate-small-btn" id="btn-swap" type="button">换牌</button>
           </div>
         </div>
+        ${this.mentalBannerHtml()}
         <div class="debate-main">
           <div class="boss-panel ${this.healRounds > 0 ? 'math-active' : ''}">
             <img id="boss-portrait" src="${this.boss.portrait}" alt="${this.boss.name}">
@@ -266,10 +353,10 @@ export class DebateController {
           </div>
         </div>
         <div class="debate-hand-wrap">
-          ${this.mechanic === 'double' ? this.responseStripHtml() : ''}
+          ${this.isTwoCardMode() ? this.responseStripHtml() : ''}
           <div class="debate-hand-head">
-            <span>第 <strong id="turn-number">${this.turn}</strong> 回合 · ${this.mechanic === 'double' ? '两张牌分别回应两句话' : '选一张回应'}</span>
-            <span>${this.isTouch ? '点牌回应' : this.mechanic === 'double' ? '依次点两张牌' : '按 <strong>1 / 2 / 3</strong> 出牌'}</span>
+            <span>第 <strong id="turn-number">${this.turn}</strong> 回合 · ${this.isTwoCardMode() ? (this.mechanic === 'double' ? '两张牌分别回应两句话' : '跋扈：选两张牌连打') : '选一张回应'}</span>
+            <span>${this.isTouch ? '点牌回应' : this.isTwoCardMode() ? '依次点两张牌' : `按 <strong>1 / 2 / 3${this.mentalState === 'panic' ? ' / 4' : ''}</strong> 出牌`}</span>
           </div>
           <div class="debate-hand" id="debate-hand"></div>
         </div>
@@ -335,11 +422,20 @@ export class DebateController {
   }
 
   private responseStripHtml(): string {
+    const labels = this.mechanic === 'double' ? ['A', 'B'] : ['1', '2'];
     const slots = [0, 1].map((index) => {
       const card = this.responses[index];
-      return `<div class="response-slot ${card ? 'filled' : ''}"><span>${index === 0 ? 'A' : 'B'}</span><b>${card ? this.escape(card.name) : '等待回应'}</b></div>`;
+      return `<div class="response-slot ${card ? 'filled' : ''}"><span>${labels[index]}</span><b>${card ? this.escape(card.name) : '等待出牌'}</b></div>`;
     });
-    return `<div class="response-strip">${slots.join('')}<span class="response-tip">${this.responses.length === 0 ? '点一张牌回应 A' : '再点一张牌回应 B'}</span></div>`;
+    const tip =
+      this.mechanic === 'double'
+        ? this.responses.length === 0
+          ? '点一张牌回应 A'
+          : '再点一张牌回应 B'
+        : this.responses.length === 0
+          ? '点一张牌出牌'
+          : '再点一张牌，触发跋扈连打';
+    return `<div class="response-strip">${slots.join('')}<span class="response-tip">${tip}</span></div>`;
   }
 
   private logHtml(): string {
@@ -450,6 +546,10 @@ export class DebateController {
 
   private playIndex(index: number): void {
     if (!this.active || this.resolving || this.finished) return;
+    if (this.mentalState === 'arrogant' && this.mechanic !== 'double') {
+      this.stageArrogant(index);
+      return;
+    }
     if (this.mechanic === 'double') {
       this.stageDouble(index);
       return;
@@ -465,6 +565,13 @@ export class DebateController {
     const matchedTopic = topicMatch(card, lineTopic);
     const raw = cardDamage(card, this.save.stats.oratory, this.comboPending) + (matchedTopic ? TOPIC_BONUS : 0);
     let damage = Math.max(1, Math.round(raw * multiplier));
+    if (this.mentalState === 'panic') {
+      this.doubtRounds = 2;
+      if (relation === '克制') {
+        damage = Math.round(damage * 1.6);
+        this.log.push({ text: '十一被你说得起了疑心，克制伤害 +60%。', kind: 'good' });
+      }
+    }
     const activeMod = this.playerDamageMod;
     this.playerDamageMod = 0;
     if (activeMod !== 0) {
@@ -538,6 +645,12 @@ export class DebateController {
     }
 
     // Boss 2: first counter hit summons Kaige with a shield.
+    if (this.mentalState === 'afraid') {
+      const stacks = relation === '克制' ? 2 : 1;
+      this.pleaStacks += stacks;
+      this.log.push({ text: `害怕：你攒下 ${stacks} 层求饶（共 ${this.pleaStacks} 层）。`, kind: 'bad' });
+    }
+
     if (this.mechanic === 'summon' && relation === '克制') {
       if (!this.kaigeSummoned) {
         this.kaigeSummoned = true;
@@ -609,6 +722,7 @@ export class DebateController {
       this.stepsLeft -= 1;
       this.log.push({ text: '十一按了按太阳穴。教导主任又近了一步。', kind: 'bad' });
     }
+    this.tickMentalState();
     this.renderSteps();
     if (this.stepsLeft <= 0) {
       window.setTimeout(() => this.finish(false), 700);
@@ -618,7 +732,8 @@ export class DebateController {
     window.setTimeout(() => {
       if (!this.active) return;
       this.turn += 1;
-      this.drawHand(3);
+      this.maybeTriggerMentalState();
+      this.drawHand(this.handTarget());
       this.startKaigeRound();
       this.chooseSeal();
       this.phase = this.getPhase();
@@ -656,6 +771,148 @@ export class DebateController {
     }
   }
 
+  private stageArrogant(index: number): void {
+    if (this.responses.length >= 2) return;
+    const card = this.hand[index];
+    if (!card || card.id === this.sealedCardId) return;
+    this.responses.push(card);
+    this.hand.splice(index, 1);
+    this.renderHand();
+    this.renderResponseStrip();
+    if (this.responses.length === 2) {
+      window.setTimeout(() => this.resolveArrogant(), 220);
+    }
+  }
+
+  private resolveArrogant(): void {
+    if (this.responses.length !== 2 || this.resolving || !this.line) return;
+    this.resolving = true;
+    const line = this.line;
+    const rows = this.responses.map((card) => {
+      const relation = relationLabel(card.type, line.type);
+      const matchedTopic = topicMatch(card, line.topic ?? '规矩');
+      const raw = cardDamage(card, this.save.stats.oratory) + (matchedTopic ? TOPIC_BONUS : 0);
+      return {
+        card,
+        relation,
+        matchedTopic,
+        damage: Math.max(1, Math.round(raw * counterMultiplier(card.type, line.type))),
+      };
+    });
+    const counters = rows.filter((row) => row.relation === '克制');
+    const sorted = [...rows].sort((a, b) => b.damage - a.damage);
+    let damage = sorted[0].damage;
+    if (counters.length > 0) {
+      damage += Math.round(sorted[1].damage * 0.5);
+      this.log.push({ text: '跋扈：任意一张克制，另一张追加 50% 伤害。', kind: 'good' });
+    }
+    const activeMod = this.playerDamageMod;
+    this.playerDamageMod = 0;
+    if (activeMod !== 0) {
+      damage = Math.max(1, Math.round(damage * (1 + activeMod)));
+      this.log.push({ text: activeMod > 0 ? '凯哥帮你说话，连打伤害 +30%。' : '凯哥收了过路费，连打伤害 -20%。', kind: activeMod > 0 ? 'good' : 'bad' });
+    }
+    let dealt = damage;
+    let healed = 0;
+    let absorbed = 0;
+    const relation = counters.length > 0 ? '克制' : rows.every((row) => row.relation === '被克') ? '被克' : '普通';
+
+    if (this.mechanic === 'summon' && this.shield > 0) {
+      absorbed = Math.min(this.shield, damage);
+      this.shield -= absorbed;
+      damage -= absorbed;
+      dealt = damage;
+    }
+
+    if (this.mechanic === 'heal' && this.healRounds > 0) {
+      if (relation !== '克制') {
+        healed = dealt;
+        damage = 0;
+        this.conviction = Math.min(this.maxConviction, this.conviction + healed);
+        this.log.push({ text: `学霸意识：连打没有克制，反而让他回了 ${healed} 点。`, kind: 'bad' });
+      } else {
+        damage = Math.max(1, Math.round(damage * 0.8));
+        this.log.push({ text: '学霸意识：连打的克制伤害被压了 20%。', kind: 'bad' });
+      }
+    }
+
+    this.conviction = Math.max(0, this.conviction - damage);
+    this.totalDamage += dealt;
+    rows.forEach((row) => {
+      this.log.push({
+        text: `你用【${row.card.name}】${row.matchedTopic ? '切题' : ''}${row.relation === '克制' ? '克制' : row.relation === '被克' ? '被克' : '普通'}。`,
+        kind: row.relation === '克制' || row.matchedTopic ? 'good' : row.relation === '被克' ? 'bad' : undefined,
+      });
+      if (row.card.role === 'reveal') this.revealNext = true;
+      if (row.card.role === 'delay') this.stepsLeft += 1;
+      this.save.notebook[line.id] = line.type;
+      this.discard.push(row.card);
+    });
+    this.save.cycleKnown = true;
+    this.callbacks.onPersist();
+    saveGame(this.save);
+    this.responses = [];
+    this.log.push({ text: `跋扈连打造成 ${damage} 伤害${absorbed > 0 ? `（护盾吸收 ${absorbed}）` : ''}${healed > 0 ? `（回血 ${healed}）` : ''}。`, kind: relation === '克制' ? 'good' : 'bad' });
+
+    if (this.mechanic === 'summon' && relation === '克制') {
+      if (!this.kaigeSummoned) {
+        this.kaigeSummoned = true;
+        this.kaigeActive = true;
+        this.kaigeRounds = 2;
+        this.kaigeFlipped = false;
+        this.kaigeSecondShield = false;
+        const lost = Math.max(0, this.maxConviction - this.conviction);
+        this.shield += Math.round(lost * 0.5);
+        this.log.push({ text: `凯哥来了，给岛小王加了 ${Math.round(lost * 0.5)} 护盾。`, kind: 'bad' });
+      } else if (this.kaigeActive && !this.kaigeFlipped) {
+        this.kaigeFlipped = true;
+        this.playerDamageMod = 0.3;
+        this.log.push({ text: '凯哥倒戈了。下一张牌伤害 +30%。', kind: 'good' });
+      }
+    }
+
+    this.updateBars();
+    this.renderHand();
+    this.renderResponseStrip();
+    this.renderLog();
+    this.updateSpeechType();
+    this.addFloatingDamage(damage, relation);
+    this.shakeBoss();
+
+    if (this.conviction <= 0) {
+      window.setTimeout(() => this.finish(true), 700);
+      return;
+    }
+
+    this.stepsLeft -= 1;
+    if (this.mechanic === 'final' && this.turn % 2 === 0) {
+      this.stepsLeft -= 1;
+      this.log.push({ text: '十一按了按太阳穴。教导主任又近了一步。', kind: 'bad' });
+    }
+    this.tickMentalState();
+    this.renderSteps();
+    if (this.stepsLeft <= 0) {
+      window.setTimeout(() => this.finish(false), 700);
+      return;
+    }
+
+    window.setTimeout(() => {
+      if (!this.active) return;
+      this.turn += 1;
+      this.maybeTriggerMentalState();
+      this.drawHand(this.handTarget());
+      this.startKaigeRound();
+      this.chooseSeal();
+      this.phase = this.getPhase();
+      this.lines = this.pickRoundLines();
+      this.line = this.lines[0] ?? null;
+      this.resolving = false;
+      this.render();
+      this.revealNext = false;
+      this.root.querySelector('#debate-hand')?.classList.add('deal-in');
+    }, 700);
+  }
+
   private resolveDouble(): void {
     if (this.responses.length !== 2 || this.resolving) return;
     this.resolving = true;
@@ -669,7 +926,23 @@ export class DebateController {
     });
     const counters = pairs.filter((pair) => pair.relation === '克制').length;
     let damage = Math.max(...pairs.map((pair) => pair.damage));
+    if (this.mentalState === 'arrogant' && counters > 0) {
+      damage += Math.round(Math.min(...pairs.map((pair) => pair.damage)) * 0.5);
+      this.log.push({ text: '跋扈：双线回应里任意一张克制，另一张追加 50% 伤害。', kind: 'good' });
+    }
     if (counters === 0) damage = Math.round(damage * 0.6);
+    if (this.mentalState === 'panic') {
+      this.doubtRounds = 2;
+      if (counters > 0) {
+        damage = Math.round(damage * 1.6);
+        this.log.push({ text: '疑虑生效：克制伤害 +60%。', kind: 'good' });
+      }
+    }
+    if (this.mentalState === 'afraid') {
+      const stacks = pairs.reduce((sum, pair) => sum + (pair.relation === '克制' ? 2 : 1), 0);
+      this.pleaStacks += stacks;
+      this.log.push({ text: `害怕：你攒下 ${stacks} 层求饶（共 ${this.pleaStacks} 层）。`, kind: 'bad' });
+    }
     this.conviction = Math.max(0, this.conviction - damage);
     this.totalDamage += damage;
     pairs.forEach((pair, index) => {
@@ -718,6 +991,7 @@ export class DebateController {
       return;
     }
     this.stepsLeft -= 1;
+    this.tickMentalState();
     this.renderSteps();
     if (this.stepsLeft <= 0) {
       window.setTimeout(() => this.finish(false), 700);
@@ -726,7 +1000,8 @@ export class DebateController {
     window.setTimeout(() => {
       if (!this.active) return;
       this.turn += 1;
-      this.drawHand(3);
+      this.maybeTriggerMentalState();
+      this.drawHand(this.handTarget());
       this.chooseSeal();
       this.lines = this.pickRoundLines();
       this.line = this.lines[0] ?? null;
@@ -779,7 +1054,7 @@ export class DebateController {
     this.swapped = true;
     this.discard.push(...this.hand);
     this.hand = [];
-    this.drawHand(3);
+    this.drawHand(this.handTarget());
     this.stepsLeft -= 1;
     this.log.push({ text: '你换了一口气，重新组织语言。教导主任又近了一步。', kind: 'bad' });
     this.updateBars();

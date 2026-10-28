@@ -888,7 +888,7 @@ export class GameApp {
         `<div class="modal-card">
           <div class="modal-kicker">DECK / 牌组</div>
           <h2>把嘴里的牌，重新排一遍。</h2>
-          <p class="modal-sub">只能在击败 Boss 后调整。从 12 张牌里选 6 张；三种类型至少各一张。卡牌话题与 Boss 当前话题一致时，伤害 +6。</p>
+          <p class="modal-sub">只能在击败 Boss 后调整。从 24 张牌里选 6 张；三种类型至少各一张。卡牌话题与 Boss 当前话题一致时，伤害 +6。</p>
           <div class="deck-layout">
             <div class="deck-grid">${cards}</div>
             <aside class="deck-side">

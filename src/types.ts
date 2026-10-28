@@ -136,6 +136,25 @@ export interface RoomBounds {
   bottom: number;
 }
 
+export type KeyColor = 'red' | 'white' | 'yellow';
+
+export interface ColorKeyDef {
+  id: string;
+  x: number;
+  y: number;
+  color: KeyColor;
+  correct?: boolean;
+}
+
+export interface KeySetup {
+  mode: 'color' | 'stall' | 'teleport' | 'normal';
+  note?: { x: number; y: number; text: string };
+  colorKeys?: ColorKeyDef[];
+  stallSpots?: Array<{ x: number; y: number }>;
+  teleportSpots?: Array<{ x: number; y: number }>;
+  teleportInterval?: number;
+}
+
 export interface LevelConfig {
   id: string;
   index: number;
@@ -146,6 +165,8 @@ export interface LevelConfig {
   playerStart: { x: number; y: number };
   objective: ObjectiveDef;
   objectiveSpots?: Array<{ x: number; y: number }>;
+  keySetup?: KeySetup;
+  speedMultiplier?: number;
   exit: ExitDef;
   boss: BossSpawn;
   props: PropDef[];

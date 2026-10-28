@@ -1,4 +1,5 @@
 import type { BossDef, DebateTopic, SceneLine } from '../types';
+import { GENERAL_LINES, UNIQUE_LINES } from './bossLines';
 
 const narrator = (text: string): SceneLine => ({ speaker: '旁白', text });
 const kanno = (text: string): SceneLine => ({ speaker: 'Kanno', text, portrait: './art/portrait_kanno.svg' });
@@ -13,7 +14,7 @@ export const BOSSES: Record<string, BossDef> = {
     sprite: 'wangxin',
     accent: '#486b91',
     conviction: 128,
-    steps: 9,
+    steps: 10,
     mechanic: 'heal',
     intro: [
       narrator('王心从点名册后面抬起头。粉笔灰在灯下慢慢飘。'),
@@ -67,7 +68,7 @@ export const BOSSES: Record<string, BossDef> = {
     sprite: 'daoxiaowang',
     accent: '#c84938',
     conviction: 150,
-    steps: 9,
+    steps: 10,
     mechanic: 'summon',
     intro: [
       narrator('岛小王把拖把往地上一杵，水花溅到你的鞋上。'),
@@ -109,6 +110,7 @@ export const BOSSES: Record<string, BossDef> = {
       '别踩我刚拖的地。',
       '谁在那边？',
       '王心自己怎么不下来。',
+      '坏了，钥匙好像被我搞到隔间里去了。',
     ],
   },
   youxiaotang: {
@@ -120,7 +122,7 @@ export const BOSSES: Record<string, BossDef> = {
     sprite: 'youxiaotang',
     accent: '#2e5547',
     conviction: 172,
-    steps: 9,
+    steps: 10,
     mechanic: 'double',
     intro: [
       narrator('右小唐从书堆后面抬起头，绿色的眼睛在灯下很静。'),
@@ -174,7 +176,7 @@ export const BOSSES: Record<string, BossDef> = {
     sprite: 'shiyi',
     accent: '#f0c04e',
     conviction: 198,
-    steps: 7,
+    steps: 10,
     mechanic: 'final',
     final: true,
     intro: [
@@ -247,6 +249,13 @@ const LINE_TOPICS: Record<string, DebateTopic> = {
 
 Object.values(BOSSES).forEach((boss) => {
   boss.lines.forEach((line) => {
-    line.topic = LINE_TOPICS[line.id] ?? '规矩';
+    line.topic = LINE_TOPICS[line.id] ?? line.topic ?? '规矩';
   });
+  boss.lines = [
+    ...UNIQUE_LINES[boss.id],
+    ...GENERAL_LINES.map((general) => ({
+      ...general,
+      id: `${boss.id}_${general.id}`,
+    })),
+  ];
 });
