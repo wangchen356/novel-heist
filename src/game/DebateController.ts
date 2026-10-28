@@ -9,6 +9,7 @@ interface DebateCallbacks {
   onWin: () => void;
   onLose: () => void;
   onPersist: () => void;
+  onHelp: () => void;
 }
 
 interface LogEntry {
@@ -138,7 +139,7 @@ export class DebateController {
 
   private bindKeyboard(): void {
     this.keyHandler = (event: KeyboardEvent) => {
-      if (!this.active) return;
+      if (!this.active || document.body.classList.contains('skill-guide-open')) return;
       if (event.code === 'Digit1' || event.code === 'Numpad1') {
         event.preventDefault();
         this.playIndex(0);
@@ -329,6 +330,7 @@ export class DebateController {
             <div class="dean-steps" id="dean-steps"></div>
           </div>
           <div class="debate-actions">
+            <button class="debate-small-btn" id="btn-debate-help" type="button">手册</button>
             <button class="debate-small-btn" id="btn-notebook" type="button">错题本</button>
             <button class="debate-small-btn" id="btn-swap" type="button">换牌</button>
           </div>
@@ -363,6 +365,7 @@ export class DebateController {
       </div>
       <div id="debate-result" class="debate-result hidden"></div>
     `;
+    this.root.querySelector('#btn-debate-help')?.addEventListener('click', () => this.callbacks.onHelp());
     this.root.querySelector('#btn-notebook')?.addEventListener('click', () => this.toggleNotebook());
     this.root.querySelector('#btn-swap')?.addEventListener('click', () => this.swapHand());
     this.root.querySelectorAll<HTMLButtonElement>('.play-card').forEach((button, index) => {
@@ -546,6 +549,7 @@ export class DebateController {
 
   private playIndex(index: number): void {
     if (!this.active || this.resolving || this.finished) return;
+    if (document.body.classList.contains('skill-guide-open')) return;
     if (this.mentalState === 'arrogant' && this.mechanic !== 'double') {
       this.stageArrogant(index);
       return;

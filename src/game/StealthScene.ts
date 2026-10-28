@@ -97,6 +97,10 @@ export class StealthScene extends Phaser.Scene {
   private facePickups: FaceRuntime[] = [];
   private objectiveSprite!: Phaser.GameObjects.Image;
   private objectiveGlow!: Phaser.GameObjects.Image;
+  private kannoBubble!: Phaser.GameObjects.Text;
+  private kannoBubbleTimer = 0;
+  private kannoBubbleCooldown = 3;
+  private kannoIdleTime = 0;
   private exitSprite!: Phaser.GameObjects.Image;
   private exitGlow!: Phaser.GameObjects.Image;
   private visionGraphics!: Phaser.GameObjects.Graphics;
@@ -144,6 +148,9 @@ export class StealthScene extends Phaser.Scene {
       this.objectiveSpot = { x: spot.x, y: spot.y };
     }
     this.collectedFace = 0;
+    this.kannoBubbleTimer = 0;
+    this.kannoBubbleCooldown = 3;
+    this.kannoIdleTime = 0;
     this.stamina = staminaMax(this.save.stats);
     this.maxStamina = this.stamina;
     this.dodgeCooldown = 0;
@@ -239,6 +246,7 @@ export class StealthScene extends Phaser.Scene {
     this.throwCooldown = Math.max(0, this.throwCooldown - dt);
     this.updatePlayer(dt);
     this.updateBoss(dt, time);
+    this.updateKannoBubble(dt);
     this.updatePickups();
     this.updateKeyTeleport(dt);
     this.updateInteraction();
@@ -520,6 +528,19 @@ export class StealthScene extends Phaser.Scene {
     playerBody.setSize(26, 18);
     playerBody.setOffset((this.player.width - 26) / 2, this.player.height - 29);
     this.player.setDrag(0, 0);
+    this.kannoBubble = this.add
+      .text(this.player.x, this.player.y - 70, '', {
+        fontFamily: '"Microsoft YaHei", sans-serif',
+        fontSize: '10px',
+        color: '#211d1a',
+        backgroundColor: '#f4ead8ee',
+        padding: { x: 7, y: 4 },
+        wordWrap: { width: 190, useAdvancedWrap: true },
+        align: 'center',
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(this.player.y + 100)
+      .setAlpha(0);
   }
 
   private buildBoss(): void {
@@ -960,6 +981,54 @@ export class StealthScene extends Phaser.Scene {
     g.clear();
     g.lineStyle(2, 0xf0c04e, 0.24);
     g.strokeCircle(x, y, 22);
+  }
+
+  private kannoBubbleLines(): string[] {
+    if (this.hasObjective) {
+      return ['拿到了。', '现在只要出去。', '别在最后一步被看见。'];
+    }
+    if (this.level.id === 'classroom') {
+      return this.noteRead
+        ? ['白色。记住了。', '别拿错。', '门应该能开了。']
+        : ['门应该没锁吧。', '今晚怎么这么安静。', '猴子这本书，真会挑时候。', '十一应该不在办公室。'];
+    }
+    if (this.level.id === 'toilet') {
+      return ['哪个隔间……', '岛小王应该没看见我。', '这层楼怎么这么安静。', '水声有点大。'];
+    }
+    if (this.level.id === 'library') {
+      return ['门禁卡又换地方了。', '这卡是自己长腿了吗。', '右小唐应该没在看我。', '书架后面能过去吗。'];
+    }
+    return ['脚怎么这么沉。', '书就在前面。', '十一……老师。', '别停，走过去。'];
+  }
+
+  private updateKannoBubble(dt: number): void {
+    const bubble = this.kannoBubble;
+    if (!bubble) return;
+    bubble.setPosition(this.player.x, this.player.y - 68);
+    bubble.setDepth(this.player.y + 100);
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const moving = Math.abs(body.velocity.x) + Math.abs(body.velocity.y) > 24;
+    if (this.hidden || moving) {
+      bubble.setAlpha(0);
+      this.kannoBubbleTimer = 0;
+      this.kannoIdleTime = 0;
+      return;
+    }
+    if (this.kannoBubbleTimer > 0) {
+      this.kannoBubbleTimer -= dt;
+      if (this.kannoBubbleTimer <= 0) bubble.setAlpha(0);
+      return;
+    }
+    this.kannoIdleTime += dt;
+    this.kannoBubbleCooldown -= dt;
+    if (this.kannoIdleTime < 1.4 || this.kannoBubbleCooldown > 0) return;
+    const lines = this.kannoBubbleLines();
+    if (lines.length === 0) return;
+    bubble.setText(lines[Math.floor(Math.random() * lines.length)]);
+    bubble.setAlpha(1);
+    this.kannoBubbleTimer = 3.8;
+    this.kannoBubbleCooldown = 6 + Math.random() * 4;
+    this.kannoIdleTime = 0;
   }
 
   private updateKeyTeleport(dt: number): void {

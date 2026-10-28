@@ -26,6 +26,7 @@ import {
   upgradeCost,
   upgradeStat,
 } from './state';
+import { showSkillGuide } from './ui/skillGuide';
 import type { BossDef, CardType, HudState, LevelConfig, SaveData, SceneLine, Settings, StatKey } from './types';
 
 interface DialogueItem {
@@ -161,6 +162,10 @@ export class GameApp {
       this.activateAudio();
       this.showLandingModal(this.controlsHtml(), true);
     });
+    $('#btn-skill-guide').addEventListener('click', () => {
+      this.activateAudio();
+      showSkillGuide();
+    });
     $('#btn-archive').addEventListener('click', () => {
       this.activateAudio();
       this.showArchive();
@@ -185,6 +190,10 @@ export class GameApp {
     $('#btn-pause').addEventListener('click', () => {
       audio.click();
       this.openPause();
+    });
+    $('#btn-hud-help').addEventListener('click', () => {
+      audio.click();
+      this.openSkillGuide();
     });
     this.dialogueLayer.addEventListener('click', (event) => {
       if ((event.target as HTMLElement).closest('.dialogue-skip')) return;
@@ -697,6 +706,9 @@ export class GameApp {
       onPersist: () => {
         saveGame(this.save);
       },
+      onHelp: () => {
+        showSkillGuide();
+      },
     });
     this.debate.start();
     this.updateTouchControls();
@@ -1008,6 +1020,22 @@ export class GameApp {
   // pause / settings / controls / archive
   // ---------------------------------------------------------------------
 
+  private openSkillGuide(): void {
+    if (!this.currentScene || this.modalOpen || this.dialogueActive || this.debate) {
+      showSkillGuide();
+      return;
+    }
+    this.currentScene.pauseGameplay();
+    this.inputOff();
+    this.updateTouchControls();
+    showSkillGuide(() => {
+      if (this.debate || this.pauseOpen || !this.currentScene) return;
+      this.currentScene.resumeGameplay();
+      input.setEnabled(true);
+      this.updateTouchControls();
+    });
+  }
+
   private openPause(): void {
     if (!this.currentScene || this.modalOpen || this.dialogueActive || this.debate) return;
     this.pauseOpen = true;
@@ -1021,6 +1049,7 @@ export class GameApp {
         <p class="modal-sub">走廊里没有脚步声。至少现在没有。</p>
         <div class="modal-actions">
           <button class="comic-button primary" id="btn-pause-resume" type="button">继续潜行</button>
+          <button class="comic-button" id="btn-pause-skill" type="button">战斗手册</button>
           <button class="comic-button" id="btn-pause-controls" type="button">操作说明</button>
           <button class="comic-button" id="btn-pause-settings" type="button">设置</button>
           <button class="comic-button" id="btn-pause-title" type="button">回到校园网</button>
@@ -1028,6 +1057,9 @@ export class GameApp {
       </div>`,
       { close: false, dismissible: false, onMount: () => {
         document.getElementById('btn-pause-resume')?.addEventListener('click', () => this.resumeFromPause());
+        document.getElementById('btn-pause-skill')?.addEventListener('click', () => {
+          showSkillGuide();
+        });
         document.getElementById('btn-pause-controls')?.addEventListener('click', () => {
           this.showGameModal(this.controlsHtml(), { close: true, dismissible: true, onClose: () => this.openPause() });
         });
