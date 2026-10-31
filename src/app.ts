@@ -5,7 +5,7 @@ import { input } from './input';
 import { BootScene } from './game/BootScene';
 import { DebateController } from './game/DebateController';
 import { StealthScene } from './game/StealthScene';
-import { getBoss } from './data/bosses';
+import { BOSS_ORDER, getBoss } from './data/bosses';
 import { CARD_TYPES, CARDS, getCard } from './data/cards';
 import { getLevel, LEVELS } from './data/levels';
 import { ARCHIVE_ROWS, ENDING_FACE_TO_FACE, ENDING_SILENT, ENDING_TEXT, FORCED_INTRO } from './data/story';
@@ -123,6 +123,27 @@ export class GameApp {
     this.updateLanding();
     this.updateSoundButton();
     (window as unknown as { __NOVEL_GAME__?: GameApp }).__NOVEL_GAME__ = this;
+    this.bindDevBossLink();
+  }
+
+  /**
+   * Dev-only shortcut for reviewing a boss fight: `?boss=youxiaotang` boots
+   * straight into that level with the debate open. Stripped from production.
+   */
+  private bindDevBossLink(): void {
+    if (!import.meta.env.DEV) return;
+    const bossId = new URLSearchParams(window.location.search).get('boss');
+    if (!bossId) return;
+    const index = BOSS_ORDER.indexOf(bossId as (typeof BOSS_ORDER)[number]);
+    if (index < 0) return;
+    window.setTimeout(() => {
+      this.seenBosses.add(bossId);
+      this.showGameScreen();
+      this.ensureAssets(() => {
+        this.startLevel(index, { intro: false, retry: true });
+        window.setTimeout(() => this.currentScene?.debugTriggerDebate(), 900);
+      });
+    }, 250);
   }
 
   private bindGlobalAudioUnlock(): void {
