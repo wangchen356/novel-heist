@@ -674,9 +674,14 @@ export class GameApp {
     this.inputOff();
     this.updateTouchControls();
     this.hidePrompt();
+    const boss = getBoss(payload.bossId);
+    boss.portraits?.forEach((src) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+    });
     if (!this.seenBosses.has(payload.bossId)) {
       this.seenBosses.add(payload.bossId);
-      const boss = getBoss(payload.bossId);
       this.showDialogue(boss.intro, () => this.openDebate(payload.bossId));
     } else {
       this.openDebate(payload.bossId);
