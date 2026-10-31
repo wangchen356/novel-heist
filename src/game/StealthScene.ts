@@ -80,6 +80,9 @@ export class StealthScene extends Phaser.Scene {
   private collectedFace = 0;
   private stamina = 100;
   private maxStamina = 100;
+  private staminaBarBg!: Phaser.GameObjects.Rectangle;
+  private staminaBarFill!: Phaser.GameObjects.Rectangle;
+  private staminaBarLabel!: Phaser.GameObjects.Text;
   private dodgeCooldown = 0;
   private dodgeTimer = 0;
   private dodgeDir = new Phaser.Math.Vector2(1, 0);
@@ -183,6 +186,7 @@ export class StealthScene extends Phaser.Scene {
     this.buildObjectiveAndExit();
     this.buildFacePickups();
     this.buildPlayer();
+    this.buildStaminaBar();
     this.buildBoss();
     this.buildSolidsForWalls();
     this.propSolids.forEach((zone) => this.solids.add(zone));
@@ -245,6 +249,7 @@ export class StealthScene extends Phaser.Scene {
     this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
     this.throwCooldown = Math.max(0, this.throwCooldown - dt);
     this.updatePlayer(dt);
+    this.updateStaminaBar();
     this.updateBoss(dt, time);
     this.updateKannoBubble(dt);
     this.updatePickups();
@@ -541,6 +546,42 @@ export class StealthScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(this.player.y + 100)
       .setAlpha(0);
+  }
+
+  private buildStaminaBar(): void {
+    this.staminaBarBg = this.add
+      .rectangle(0, 0, 74, 15, 0x0d0b09, 0.92)
+      .setOrigin(0.5)
+      .setStrokeStyle(3, 0xf4ead8, 0.95)
+      .setDepth(2400);
+    this.staminaBarFill = this.add
+      .rectangle(0, 0, 66, 8, 0x74c07a)
+      .setOrigin(0, 0.5)
+      .setDepth(2401);
+    this.staminaBarLabel = this.add
+      .text(0, 0, '体力', {
+        fontFamily: '"Microsoft YaHei", sans-serif',
+        fontSize: '10px',
+        color: '#f4ead8',
+      })
+      .setOrigin(1, 0.5)
+      .setDepth(2401);
+  }
+
+  private updateStaminaBar(): void {
+    const ratio = Phaser.Math.Clamp(this.stamina / this.maxStamina, 0, 1);
+    const x = this.player.x;
+    const y = this.player.y - 54;
+    this.staminaBarBg.setPosition(x, y);
+    this.staminaBarFill.setPosition(x - 33, y);
+    this.staminaBarFill.setDisplaySize(Math.max(4, 66 * ratio), 8);
+    const color = ratio > 0.5 ? 0x74c07a : ratio > 0.25 ? 0xf0c04e : 0xc84938;
+    this.staminaBarFill.setFillStyle(color, 1);
+    this.staminaBarLabel.setPosition(x - 42, y);
+    const visible = this.gameplayActive && !this.sceneEnded;
+    this.staminaBarBg.setVisible(visible);
+    this.staminaBarFill.setVisible(visible);
+    this.staminaBarLabel.setVisible(visible);
   }
 
   private buildBoss(): void {
@@ -1063,11 +1104,12 @@ export class StealthScene extends Phaser.Scene {
       if (pickup.picked) return;
       if (Phaser.Math.Distance.Between(this.player.x, this.player.y, pickup.x, pickup.y) < 31) {
         pickup.picked = true;
-        this.collectedFace += pickup.value;
+        const faceValue = Math.round(pickup.value * 1.6);
+        this.collectedFace += faceValue;
         pickup.sprite.destroy();
         audio.pickup();
-        bus.emit('face:collect', pickup.value);
-        this.toast(`捡到 ${pickup.value} 点面子`);
+        bus.emit('face:collect', faceValue);
+        this.toast(`捡到 ${faceValue} 点面子`);
       }
     });
   }

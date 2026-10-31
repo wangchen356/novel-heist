@@ -1,49 +1,69 @@
-"""Cut white backgrounds and align 右小唐's three debate portraits.
+"""Cut white backgrounds and align the debate portraits of every boss.
 
-Source art lives in art_src/youxiaotang (1024x1536 AI renders on white).
-Output goes to public/art/youxiaotang as 760x1240 transparent PNGs with a
-shared framing: iris line at y=270, face centre at x=380, head height 372px.
+Source art lives in art_src/<boss>/ (1024x1536 renders on white).
+Output goes to public/art/<boss>/ as 760x1240 transparent PNGs with a shared
+framing: face centred at x=380, hair top at y=24, head height ~330px.
 
 Run with the bundled Python (numpy + Pillow):
-    python scripts/prep_portrait_states.py
+    python scripts/prep_portrait_states.py [boss ...]
 """
 
 from __future__ import annotations
 
 import os
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_DIR = os.path.join(ROOT, "art_src", "youxiaotang")
-OUT_DIR = os.path.join(ROOT, "public", "art", "youxiaotang")
+SRC_DIR = os.path.join(ROOT, "art_src")
+OUT_DIR = os.path.join(ROOT, "public", "art")
 PREVIEW_DIR = os.path.join(ROOT, "art_preview")
 
 CANVAS_W, CANVAS_H = 760, 1240
-IRIS_X, IRIS_Y = 380, 270
-TARGET_HEAD_H = 372
+FACE_X, HEAD_TOP = 380, 24
+TARGET_HEAD_H = 330
 
-# source name -> (face centre x, iris y, head top, chin)
-ALIGN = {
-    "state1_calm": dict(cx=505, iy=264, top=30, chin=395),
-    "state3_tired": dict(cx=557, iy=298, top=35, chin=400),
-    "state2_angry": dict(cx=485, iy=283, top=25, chin=400),
-}
-OUTPUT_NAME = {
-    "state1_calm": "state_01_calm.png",
-    "state3_tired": "state_02_tired.png",
-    "state2_angry": "state_03_angry.png",
+# top = hair top, cx = hair/face centre on the source image.
+BOSSES: dict[str, dict] = {
+    "youxiaotang": {
+        "head_target": True,
+        "states": [
+            ("state1_calm", "state_01_calm.png", dict(cx=505, top=25, chin=370)),
+            ("state3_tired", "state_02_tired.png", dict(cx=557, top=30, chin=400)),
+            ("state2_angry", "state_03_angry.png", dict(cx=485, top=20, chin=390)),
+        ],
+    },
+    "wangxin": {
+        "scale": 1.20,
+        "states": [
+            ("state1_pen", "state_01_calm.png", dict(cx=514, top=29)),
+            ("state2_shout", "state_02_shout.png", dict(cx=497, top=92)),
+            ("state3_flustered", "state_03_flustered.png", dict(cx=465, top=139)),
+        ],
+    },
+    "daoxiaowang": {
+        "scale": 1.08,
+        "states": [
+            ("state1_mop", "state_01_calm.png", dict(cx=511, top=21)),
+            ("state2_angry", "state_02_angry.png", dict(cx=501, top=16)),
+            ("state3_placate", "state_03_placate.png", dict(cx=503, top=39)),
+        ],
+    },
+    "shiyi": {
+        "scale": 1.22,
+        "states": [
+            ("state1_book", "state_01_calm.png", dict(cx=510, top=36)),
+            ("state2_hips", "state_02_stern.png", dict(cx=504, top=61)),
+            ("state3_tired", "state_03_tired.png", dict(cx=477, top=41)),
+        ],
+    },
 }
 
 
 def cut_white(im: Image.Image) -> tuple[np.ndarray, np.ndarray]:
-    """Return premultiplied RGB and alpha for a white-background render.
-
-    Binary flood fill finds the background; a thin band along the silhouette
-    gets a soft alpha derived from luminance so the white rim light of the
-    render does not survive as a halo on dark panels.
-    """
+    """Return premultiplied RGB and alpha for a white-background render."""
     arr = np.asarray(im.convert("RGB")).astype(np.int16)
     mn = arr.min(axis=2)
     mx = arr.max(axis=2)
@@ -61,17 +81,12 @@ def cut_white(im: Image.Image) -> tuple[np.ndarray, np.ndarray]:
     rgb = arr.astype(np.float32)
 
     # Backdrop trapped between hair strands stays fully enclosed, so the flood
-    # fill cannot reach it. Thin neutral slivers inside the dark hair mass are
-    # repainted with the surrounding hair colour instead of being cut out:
-    # holes in a silhouette look worse than a touch of shadow.
-    dark = lum < 90
-    near_dark = np.asarray(
-        Image.fromarray(np.where(dark, 255, 0).astype(np.uint8), "L").filter(ImageFilter.MaxFilter(13))
-    ) > 0
-    cand = neutral & ~bg
+    # fill cannot reach it. Neutral islands hugging the silhouette are
+    # repainted with the surrounding dark colour instead of being cut out.
     near_bg = np.asarray(
         Image.fromarray(np.where(bg, 255, 0).astype(np.uint8), "L").filter(ImageFilter.MaxFilter(31))
     ) > 0
+    cand = neutral & ~bg
     seen = np.zeros_like(cand)
     for y0, x0 in zip(*np.nonzero(cand)):
         if seen[y0, x0]:
@@ -104,9 +119,13 @@ def cut_white(im: Image.Image) -> tuple[np.ndarray, np.ndarray]:
             rgb[y, x] = fill
     alpha[bg] = 0.0
     band = (np.asarray(mask.filter(ImageFilter.MaxFilter(9))) == 255) & ~bg
-    lum = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
     soft = np.clip((235.0 - lum) / 200.0, 0.0, 1.0)
     alpha[band] = soft[band]
+
+    # Choke the matte by ~2px: the renders carry a pale keyline that would
+    # otherwise read as a white outline on the dark battle panel.
+    choked = Image.fromarray((alpha * 255).astype(np.uint8), "L").filter(ImageFilter.MinFilter(5))
+    alpha = np.asarray(choked.filter(ImageFilter.GaussianBlur(0.7))).astype(np.float32) / 255.0
 
     premul = np.clip(rgb - 255.0 * (1.0 - alpha[..., None]), 0.0, 255.0)
 
@@ -118,9 +137,8 @@ def cut_white(im: Image.Image) -> tuple[np.ndarray, np.ndarray]:
     rim = alpha < 0.92
     rgb = np.where(rim[..., None], np.clip(ext, 0, 255), rgb)
 
-    # Final pass: bright specks that survived along the silhouette (thin
-    # strands, keying leftovers) borrow the local hair colour instead of
-    # sparkling against the dark panel.
+    # Bright specks that survived along the silhouette borrow the local hair
+    # colour instead of sparkling against the dark panel.
     trans = alpha < 0.15
     near_trans = np.asarray(
         Image.fromarray(np.where(trans, 255, 0).astype(np.uint8), "L").filter(ImageFilter.MaxFilter(7))
@@ -131,6 +149,7 @@ def cut_white(im: Image.Image) -> tuple[np.ndarray, np.ndarray]:
     darkcol = num / np.maximum(den[..., None], 1e-3)
     specks = near_trans & (alpha > 0.2) & (lum > 190)
     rgb = np.where(specks[..., None], np.clip(darkcol, 0, 255), rgb)
+
     premul = np.clip(rgb * alpha[..., None], 0.0, 255.0)
     return premul, alpha * 255.0
 
@@ -141,17 +160,14 @@ def resize_pair(premul: np.ndarray, alpha: np.ndarray, size: tuple[int, int]):
     return np.asarray(p).astype(np.float32), np.asarray(a).astype(np.float32) / 255.0
 
 
-def build(name: str) -> Image.Image:
-    meta = ALIGN[name]
-    head_h = meta["chin"] - meta["top"]
-    scale = TARGET_HEAD_H / head_h
-    src = Image.open(os.path.join(SRC_DIR, name + ".png")).convert("RGB")
+def build(boss: str, src_name: str, cfg: dict, scale: float) -> Image.Image:
+    src = Image.open(os.path.join(SRC_DIR, boss, src_name + ".png")).convert("RGB")
     premul, alpha = cut_white(src)
     size = (round(src.width * scale), round(src.height * scale))
     premul, alpha = resize_pair(premul, alpha, size)
 
-    left = round(meta["cx"] * scale - IRIS_X)
-    top = round(meta["iy"] * scale - IRIS_Y)
+    left = round(cfg["cx"] * scale - FACE_X)
+    top = round(cfg["top"] * scale - HEAD_TOP)
     canvas_p = np.zeros((CANVAS_H, CANVAS_W, 3), np.float32)
     canvas_a = np.zeros((CANVAS_H, CANVAS_W), np.float32)
 
@@ -168,39 +184,37 @@ def build(name: str) -> Image.Image:
     return Image.fromarray(np.dstack([rgb, a8]).astype(np.uint8), "RGBA")
 
 
-def make_preview(images: dict[str, Image.Image]) -> None:
+def make_preview(boss: str, images: list[tuple[str, Image.Image]]) -> None:
     tw, th = CANVAS_W // 2, CANVAS_H // 2
     bg = (24, 22, 20)
-    names = ["state_01_calm", "state_02_tired", "state_03_angry"]
 
     def flatten(img: Image.Image) -> Image.Image:
-        # composite at full size, then downscale: resizing RGBA directly would
-        # blend un-premultiplied transparent pixels and fake a white fringe.
         layer = Image.new("RGBA", img.size, bg + (255,))
         layer.alpha_composite(img)
         return layer.convert("RGB").resize((tw, th), Image.LANCZOS)
 
-    sheet = Image.new("RGB", (tw * 3 + 40, th + 20), bg)
-    for i, n in enumerate(names):
-        sheet.paste(flatten(images[n]), (10 + i * (tw + 10), 10))
-    sheet.save(os.path.join(PREVIEW_DIR, "youxiaotang_states_sheet.png"))
-
-    for a, b, label in ((names[0], names[1], "blend_1_2"), (names[1], names[2], "blend_2_3")):
-        blend = Image.blend(images[a], images[b], 0.5)
-        flatten(blend).save(os.path.join(PREVIEW_DIR, label + ".png"))
+    sheet = Image.new("RGB", (tw * len(images) + 10 * (len(images) + 1), th + 20), bg)
+    for i, (_, img) in enumerate(images):
+        sheet.paste(flatten(img), (10 + i * (tw + 10), 10))
+    sheet.save(os.path.join(PREVIEW_DIR, f"{boss}_states_sheet.png"))
 
 
-def main() -> None:
-    os.makedirs(OUT_DIR, exist_ok=True)
+def main(targets: list[str]) -> None:
     os.makedirs(PREVIEW_DIR, exist_ok=True)
-    images: dict[str, Image.Image] = {}
-    for src_name, out_name in OUTPUT_NAME.items():
-        img = build(src_name)
-        img.save(os.path.join(OUT_DIR, out_name), optimize=True)
-        images[out_name.removesuffix(".png")] = img
-        print("wrote", out_name, img.size)
-    make_preview(images)
+    for boss, spec in BOSSES.items():
+        if targets and boss not in targets:
+            continue
+        out_dir = os.path.join(OUT_DIR, boss)
+        os.makedirs(out_dir, exist_ok=True)
+        images = []
+        for src_name, out_name, cfg in spec["states"]:
+            scale = TARGET_HEAD_H / (cfg["chin"] - cfg["top"]) if spec.get("head_target") else spec["scale"]
+            img = build(boss, src_name, cfg, scale)
+            img.save(os.path.join(out_dir, out_name), optimize=True)
+            images.append((out_name, img))
+            print("wrote", boss, out_name, img.size)
+        make_preview(boss, images)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

@@ -4246,3 +4246,136 @@ body.skill-guide-open {
     overflow-x: hidden;
   }
 }
+/* --------------------------------------------------------------------------
+   portrait states / guide split / stamina over head
+   -------------------------------------------------------------------------- */
+
+/* the stamina bar now floats above Kanno's head in the canvas */
+.stamina-hud {
+  display: none;
+}
+
+.boss-button {
+  background: var(--red);
+  color: var(--paper-bright);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.boss-button:hover {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.cast-card-guide {
+  position: relative;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cast-card-guide:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+.cast-hint {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  padding: 2px 5px;
+  border: 1px solid rgba(240, 192, 78, 0.55);
+  background: rgba(240, 192, 78, 0.14);
+  color: var(--yellow);
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  animation: cast-hint-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cast-hint-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.guide-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 22px 0;
+  background: var(--paper);
+}
+
+.guide-tab {
+  flex: 0 0 auto;
+  padding: 9px 16px 8px;
+  border: 2px solid var(--ink);
+  border-bottom: none;
+  background: #e8dcc6;
+  color: #6e5f4c;
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transform: translateY(2px);
+}
+
+.guide-tab em {
+  margin-left: 6px;
+  color: #8a7a63;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.guide-tab.is-active {
+  background: var(--paper);
+  color: var(--ink);
+  transform: translateY(0);
+  box-shadow: inset 0 -2px 0 var(--red);
+}
+
+.guide-tab:first-child.is-active {
+  box-shadow: inset 0 -2px 0 var(--yellow);
+}
+
+.skill-boss-card.is-locked {
+  opacity: 0.55;
+}
+
+.skill-boss-card.is-locked img {
+  filter: grayscale(1) brightness(0.75);
+}
+
+.skill-boss-card.is-locked h3 {
+  color: #8a7a63;
+}
+
+.play-card-type {
+  padding: 3px 8px;
+  border-color: rgba(33, 29, 26, 0.55);
+  background: rgba(240, 192, 78, 0.18);
+  color: #352c22;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.play-card p {
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.skill-boss-locked {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid rgba(33, 29, 26, 0.5);
+  background: rgba(33, 29, 26, 0.08);
+  color: #8a7a63;
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1;
+}

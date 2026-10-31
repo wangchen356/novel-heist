@@ -27,6 +27,7 @@ import {
   upgradeStat,
 } from './state';
 import { showSkillGuide } from './ui/skillGuide';
+import type { GuideView } from './ui/skillGuide';
 import type { BossDef, CardType, HudState, LevelConfig, SaveData, SceneLine, Settings, StatKey } from './types';
 
 interface DialogueItem {
@@ -185,7 +186,18 @@ export class GameApp {
     });
     $('#btn-skill-guide').addEventListener('click', () => {
       this.activateAudio();
-      showSkillGuide();
+      showSkillGuide('boss', this.unlockedBossCount());
+    });
+    const kannoCard = document.getElementById('cast-kanno');
+    kannoCard?.addEventListener('click', () => {
+      this.activateAudio();
+      showSkillGuide('kanno', this.unlockedBossCount());
+    });
+    kannoCard?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showSkillGuide('kanno', this.unlockedBossCount());
+      }
     });
     $('#btn-archive').addEventListener('click', () => {
       this.activateAudio();
@@ -214,7 +226,7 @@ export class GameApp {
     });
     $('#btn-hud-help').addEventListener('click', () => {
       audio.click();
-      this.openSkillGuide();
+      this.openSkillGuide('boss');
     });
     this.dialogueLayer.addEventListener('click', (event) => {
       if ((event.target as HTMLElement).closest('.dialogue-skip')) return;
@@ -733,7 +745,7 @@ export class GameApp {
         saveGame(this.save);
       },
       onHelp: () => {
-        showSkillGuide();
+        showSkillGuide('boss', this.unlockedBossCount());
       },
     });
     this.debate.start();
@@ -753,7 +765,7 @@ export class GameApp {
     this.currentScene?.pauseGameplay();
     const level = getLevel(payload.levelIndex);
     const boss = getBoss(level.bossId);
-    const baseReward = payload.method === 'debate' ? 45 : 30;
+    const baseReward = payload.method === 'debate' ? 75 : 55;
     this.save.face += baseReward;
     if (payload.method === 'debate') {
       this.save.bossWins += 1;
@@ -1046,20 +1058,26 @@ export class GameApp {
   // pause / settings / controls / archive
   // ---------------------------------------------------------------------
 
-  private openSkillGuide(): void {
+  private openSkillGuide(view: GuideView = 'boss'): void {
+    const unlocked = this.unlockedBossCount();
     if (!this.currentScene || this.modalOpen || this.dialogueActive || this.debate) {
-      showSkillGuide();
+      showSkillGuide(view, unlocked);
       return;
     }
     this.currentScene.pauseGameplay();
     this.inputOff();
     this.updateTouchControls();
-    showSkillGuide(() => {
+    showSkillGuide(view, unlocked, () => {
       if (this.debate || this.pauseOpen || !this.currentScene) return;
       this.currentScene.resumeGameplay();
       input.setEnabled(true);
       this.updateTouchControls();
     });
+  }
+
+  /** Bosses the player has met: the current level plus every cleared one. */
+  private unlockedBossCount(): number {
+    return Math.max(1, Math.min(LEVELS.length, this.save.levelIndex + 1));
   }
 
   private openPause(): void {
@@ -1075,7 +1093,8 @@ export class GameApp {
         <p class="modal-sub">走廊里没有脚步声。至少现在没有。</p>
         <div class="modal-actions">
           <button class="comic-button primary" id="btn-pause-resume" type="button">继续潜行</button>
-          <button class="comic-button" id="btn-pause-skill" type="button">战斗手册</button>
+          <button class="comic-button" id="btn-pause-kanno" type="button">Kanno 技能</button>
+          <button class="comic-button" id="btn-pause-skill" type="button">BOSS 情报</button>
           <button class="comic-button" id="btn-pause-controls" type="button">操作说明</button>
           <button class="comic-button" id="btn-pause-settings" type="button">设置</button>
           <button class="comic-button" id="btn-pause-title" type="button">回到校园网</button>
@@ -1083,8 +1102,11 @@ export class GameApp {
       </div>`,
       { close: false, dismissible: false, onMount: () => {
         document.getElementById('btn-pause-resume')?.addEventListener('click', () => this.resumeFromPause());
+        document.getElementById('btn-pause-kanno')?.addEventListener('click', () => {
+          showSkillGuide('kanno', this.unlockedBossCount());
+        });
         document.getElementById('btn-pause-skill')?.addEventListener('click', () => {
-          showSkillGuide();
+          showSkillGuide('boss', this.unlockedBossCount());
         });
         document.getElementById('btn-pause-controls')?.addEventListener('click', () => {
           this.showGameModal(this.controlsHtml(), { close: true, dismissible: true, onClose: () => this.openPause() });
