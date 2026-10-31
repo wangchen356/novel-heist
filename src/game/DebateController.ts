@@ -194,6 +194,35 @@ export class DebateController {
     return ratio > 0.66 ? 1 : ratio > 0.33 ? 2 : 3;
   }
 
+  private portraitSources(): string[] {
+    return this.boss.portraits && this.boss.portraits.length > 0 ? this.boss.portraits : [this.boss.portrait];
+  }
+
+  private portraitIndex(): number {
+    return Math.min(this.portraitSources().length - 1, this.getPhase() - 1);
+  }
+
+  private portraitLayersHtml(): string {
+    const active = this.portraitIndex();
+    return this.portraitSources()
+      .map(
+        (src, index) =>
+          `<img class="boss-portrait-layer${index === active ? ' is-on' : ''}" src="${src}" alt="${index === active ? this.boss.name : ''}" draggable="false">`,
+      )
+      .join('');
+  }
+
+  private syncPortrait(): void {
+    const layers = this.root.querySelectorAll<HTMLImageElement>('.boss-portrait-layer');
+    if (layers.length === 0) return;
+    const active = this.portraitIndex();
+    layers.forEach((layer, index) => {
+      const on = index === active;
+      layer.classList.toggle('is-on', on);
+      layer.alt = on ? this.boss.name : '';
+    });
+  }
+
   private pickLine(): BossLine {
     const phase = this.getPhase();
     if (phase !== this.phase && this.log.length > 0) {
@@ -338,7 +367,9 @@ export class DebateController {
         ${this.mentalBannerHtml()}
         <div class="debate-main">
           <div class="boss-panel ${this.healRounds > 0 ? 'math-active' : ''}">
-            <img id="boss-portrait" src="${this.boss.portrait}" alt="${this.boss.name}">
+            <div class="boss-portrait-stack" id="boss-portrait-stack">
+              ${this.portraitLayersHtml()}
+            </div>
             ${this.healRounds > 0 ? '<div class="math-storm" aria-hidden="true"><span>∑</span><span>∫</span><span>π</span><span>≠</span><span>±</span><span>√</span><span>∞</span><span>Δ</span></div><div class="math-caption">学霸意识 · 非克制牌会给他回血</div>' : ''}
             ${this.kaigeActive ? `<div class="kaige-panel"><img src="./art/portrait_kaige.svg" alt="凯哥"><div><b>凯哥</b><span>${this.kaigeFlipped ? '已倒戈 · 帮你说话' : this.kaigeSecondShield ? '收第二次过路费' : '给岛小王撑腰'}</span></div></div>` : ''}
             ${this.mechanic === 'final' && this.sealedCardId ? '<div class="seal-banner">谈话中 · 一张牌被封</div>' : ''}
@@ -527,6 +558,7 @@ export class DebateController {
     if (turn) turn.textContent = String(this.turn);
     this.renderSteps();
     this.renderCombo();
+    this.syncPortrait();
   }
 
   private renderLog(): void {
@@ -1046,7 +1078,7 @@ export class DebateController {
   }
 
   private shakeBoss(): void {
-    const img = this.root.querySelector('#boss-portrait');
+    const img = this.root.querySelector('#boss-portrait-stack');
     if (!img) return;
     img.classList.remove('boss-shake');
     void (img as HTMLElement).offsetWidth;

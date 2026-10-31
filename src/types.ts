@@ -51,6 +51,8 @@ export interface BossDef {
   title: string;
   shortTitle: string;
   portrait: string;
+  /** Optional per-phase portraits: index 0 = phase 1, 1 = phase 2, 2 = phase 3. */
+  portraits?: string[];
   sprite: string;
   accent: string;
   conviction: number;

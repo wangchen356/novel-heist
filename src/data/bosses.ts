@@ -125,6 +125,11 @@ export const BOSSES: Record<string, BossDef> = {
     title: '临时图书管理员',
     shortTitle: '书签',
     portrait: './art/portrait_youxiaotang.svg',
+    portraits: [
+      './art/youxiaotang/state_01_calm.png',
+      './art/youxiaotang/state_02_tired.png',
+      './art/youxiaotang/state_03_angry.png',
+    ],
     sprite: 'youxiaotang',
     accent: '#2e5547',
     conviction: 172,

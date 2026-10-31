@@ -1340,7 +1340,7 @@ button:focus-visible {
   pointer-events: none;
 }
 
-.boss-panel img {
+.boss-panel > img {
   position: relative;
   z-index: 1;
   width: min(100%, 380px);
@@ -1348,6 +1348,30 @@ button:focus-visible {
   object-fit: contain;
   object-position: bottom center;
   filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, 0.35));
+}
+
+.boss-portrait-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.boss-portrait-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.boss-portrait-layer.is-on {
+  opacity: 1;
 }
 
 .boss-panel .boss-shake {
